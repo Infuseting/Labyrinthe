@@ -130,8 +130,8 @@ MU_TEST_SUITE(utils_test_suite) {
     MU_RUN_TEST(test_clearScreen_execution);
 }
 
-int main(void) {
+int run_utils_tests(void) {
     MU_RUN_SUITE(utils_test_suite);
     MU_REPORT();
-    return MU_EXIT_CODE;
+    return minunit_fail;
 }

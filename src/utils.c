@@ -1,4 +1,5 @@
-#include <utils.h>
+#include "utils.h"
+#include "maze.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -19,9 +20,6 @@ bool getChoice(int *choice, int min, int max) {
     return true;
 }
 
-/*
-    @brief This function clears the input buffer to remove any unwanted characters.
-*/
 void clearInputBuffer(void) {
     int c;
     while ((c = getchar()) != '\n' && c != EOF) {
@@ -35,3 +33,20 @@ void clearScreen() {
         system("clear");
     #endif
 }
+
+void displayMaze(const Maze* maze) {
+    if (!maze || !maze->tiles) {
+        printf("Maze is not initialized.\n");
+        return;
+    }
+
+    for (int y = 0; y < maze->height; ++y) {
+        for (int x = 0; x < maze->width; ++x) {
+            Coords coords = {x, y};
+            char tileChar = getChar(maze, coords);
+            putchar(tileChar);
+        }
+        putchar('\n');
+    }
+}
+

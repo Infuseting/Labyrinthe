@@ -1,5 +1,8 @@
 #include <stdbool.h>
 
+/*
+    @brief This enumeration defines error codes that can be returned by functions in the program.
+*/
 typedef enum ErrorCode {
     SUCCESS = 0,
     UNKNOWN_ERROR = 1,
