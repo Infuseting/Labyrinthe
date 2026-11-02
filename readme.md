@@ -26,6 +26,16 @@ make test
 
 Compile les tests MinUnit de `tests/*.c` avec les modules du projet, sauf `src/main.c`, puis exécute `build/test_runner`.
 
+## Documentation
+
+Avec Doxygen installé, depuis la racine du projet :
+
+```sh
+doxygen Doxyfile
+```
+
+Ouvrir ensuite `build/docs/html/index.html`. 
+
 ## Commandes utiles
 
 | Commande | Action |

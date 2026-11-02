@@ -1,0 +1,26 @@
+DOXYFILE_ENCODING      = UTF-8
+PROJECT_NAME           = "Labyrinthe"
+PROJECT_BRIEF          = "Projet de labyrinthe"
+OUTPUT_DIRECTORY       = build/docs
+OUTPUT_LANGUAGE        = French
+INPUT_ENCODING         = UTF-8
+OPTIMIZE_OUTPUT_FOR_C  = YES
+
+INPUT                  = readme.md src include tests
+USE_MDFILE_AS_MAINPAGE = readme.md
+FILE_PATTERNS          = *.c *.h *.md
+RECURSIVE              = YES
+EXCLUDE                = include/minunit.h
+MARKDOWN_SUPPORT       = YES
+
+EXTRACT_ALL            = YES
+EXTRACT_STATIC         = YES
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = NO
+WARNINGS               = YES
+WARN_IF_DOC_ERROR      = YES
+
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+GENERATE_LATEX         = NO
+HAVE_DOT               = NO
