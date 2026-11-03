@@ -1,6 +1,6 @@
 CC       = gcc
 CFLAGS   = -Wall -Wextra -pedantic -std=c99 -g
-CPPFLAGS = -D_POSIX_C_SOURCE=200809L -Iincludes -Iincludes/minunit -Iinclude
+CPPFLAGS = -D_POSIX_C_SOURCE=200809L -Iinclude
 LDLIBS   = -lm
 
 SRC_DIR   = src
@@ -21,7 +21,7 @@ OBJ_NO_MAIN = $(filter-out $(OBJ_DIR)/main.o, $(OBJ))
 TEST_SRC    = $(wildcard $(TEST_DIR)/*.c)
 TEST_OBJ    = $(patsubst $(TEST_DIR)/%.c, $(OBJ_DIR)/%.o, $(TEST_SRC))
 
-.PHONY: all test clean fclean re help
+.PHONY: all test doc clean fclean re help
 
 all: $(TARGET)
 
@@ -49,6 +49,9 @@ test: $(TEST_TARGET)
 $(TEST_TARGET): $(TEST_OBJ) $(OBJ_NO_MAIN) | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
 
+doc: | $(BUILD_DIR)
+	doxygen Doxyfile
+
 clean:
 	rm -rf $(OBJ_DIR) obj
 
@@ -62,6 +65,7 @@ help:
 	@echo "Usage : make [cible]"
 	@echo "  all     : Compile le projet principal ($(TARGET))"
 	@echo "  test    : Compile et execute les tests unitaires MinUnit ($(TEST_TARGET))"
+	@echo "  doc     : Genere la documentation Doxygen dans $(BUILD_DIR)/docs"
 	@echo "  clean   : Supprime les fichiers objets temporaires"
 	@echo "  fclean  : Supprime le dossier $(BUILD_DIR)/ et tous les executables"
 	@echo "  re      : Recompile tout depuis zero"

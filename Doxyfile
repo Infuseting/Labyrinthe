@@ -13,12 +13,15 @@ RECURSIVE              = YES
 EXCLUDE                = include/minunit.h
 MARKDOWN_SUPPORT       = YES
 
-EXTRACT_ALL            = YES
+EXTRACT_ALL            = NO
 EXTRACT_STATIC         = YES
 SOURCE_BROWSER         = YES
 INLINE_SOURCES         = NO
+
 WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = YES
 WARN_IF_DOC_ERROR      = YES
+WARN_NO_PARAMDOC       = YES
 
 GENERATE_HTML          = YES
 HTML_OUTPUT            = html
