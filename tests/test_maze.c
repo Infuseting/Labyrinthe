@@ -442,11 +442,11 @@ MU_TEST_SUITE(maze_test_suite) {
 }
 
 /**
- * @brief Exécuteur principal des tests unitaires MinUnit.
+ * @brief Exécute la suite de tests unitaires du module maze.
  *
- * @return Code de retour MinUnit (0 si succès, nombre d'échecs sinon).
+ * @return 0 si tous les tests ont réussi, nombre d'échecs sinon.
  */
-int main(void) {
+int test_maze_run(void) {
     MU_RUN_SUITE(maze_test_suite);
     MU_REPORT();
     return MU_EXIT_CODE;
