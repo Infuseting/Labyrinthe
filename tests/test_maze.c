@@ -238,6 +238,43 @@ MU_TEST(test_cas_nominal_deplacement_joueur) {
 }
 
 /**
+ * @brief Cas nominal : mémorisation et plafonnement de la traînée aux 10 derniers mouvements.
+ */
+MU_TEST(test_cas_nominal_trainee_10_positions) {
+    Maze *maze = maze_create(DEFAULT_HEIGHT, DEFAULT_WIDTH);
+    mu_check(maze != NULL);
+    mu_assert_int_eq(0, maze_generate(maze));
+
+    mu_assert_int_eq(0, maze->trail_count);
+
+    mu_check(maze_move(maze, 0, 1) == true);
+    mu_assert_int_eq(1, maze->trail_count);
+    mu_assert_int_eq(1, maze->trail[0].x);
+    mu_assert_int_eq(0, maze->trail[0].y);
+
+    mu_check(maze_move(maze, 0, -1) == true);
+    mu_assert_int_eq(2, maze->trail_count);
+    mu_assert_int_eq(1, maze->trail[0].x);
+    mu_assert_int_eq(1, maze->trail[0].y);
+    mu_assert_int_eq(1, maze->trail[1].x);
+    mu_assert_int_eq(0, maze->trail[1].y);
+
+    for (int i = 0; i < 15; i++) {
+        if (maze->player.y == 0) {
+            maze_move(maze, 0, 1);
+        } else {
+            maze_move(maze, 0, -1);
+        }
+    }
+    mu_assert_int_eq(MAX_TRAIL, maze->trail_count);
+
+    maze_reset_trail(maze);
+    mu_assert_int_eq(0, maze->trail_count);
+
+    maze_free(maze);
+}
+
+/**
  * @brief Cas limite : taille minimale valide 3x3 (1 seule case).
  */
 MU_TEST(test_cas_limite_taille_minimale_3x3) {
@@ -333,6 +370,7 @@ MU_TEST(test_cas_limite_detection_sortie) {
  */
 MU_TEST(test_cas_limite_free_null) {
     maze_free(NULL);
+    maze_reset_trail(NULL);
     mu_check(true);
 }
 
@@ -428,6 +466,7 @@ MU_TEST_SUITE(maze_test_suite) {
     MU_RUN_TEST(test_cas_nominal_annexe_5x7);
     MU_RUN_TEST(test_cas_nominal_sauvegarde_et_chargement);
     MU_RUN_TEST(test_cas_nominal_deplacement_joueur);
+    MU_RUN_TEST(test_cas_nominal_trainee_10_positions);
     MU_RUN_TEST(test_cas_limite_taille_minimale_3x3);
     MU_RUN_TEST(test_cas_limite_couloir_horizontal_3x25);
     MU_RUN_TEST(test_cas_limite_couloir_vertical_11x3);
