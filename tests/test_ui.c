@@ -108,8 +108,8 @@ MU_TEST(test_ui_erreur_prompt_string_parametres_invalides) {
  * @brief Cas nominal : affichage du bandeau HUD avec différents états de jeu.
  */
 MU_TEST(test_ui_nominal_affichage_hud) {
-    ui_display_hud(1000, 0, false);
-    ui_display_hud(850, 15, true);
+    ui_display_hud(1000, 0, false, 1, NULL);
+    ui_display_hud(850, 15, true, 2, "ATTAQUE ! Un Ogre vous a assomme (-150 pts) !");
     mu_check(true);
 }
 

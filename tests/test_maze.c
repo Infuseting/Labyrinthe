@@ -626,6 +626,77 @@ MU_TEST(test_cas_erreur_fichiers_sauvegarde_et_chargement) {
 }
 
 /**
+ * @brief Cas nominal : génération en mode difficile avec chemins multiples et présence de monstres.
+ */
+MU_TEST(test_cas_nominal_generation_difficile_chemins_multiples) {
+    Maze *maze = maze_create(DEFAULT_HEIGHT, DEFAULT_WIDTH);
+    mu_check(maze != NULL);
+    mu_assert_int_eq(0, maze_generate_with_difficulty(maze, DIFF_HARD));
+
+    mu_assert_int_eq(DIFF_HARD, maze->difficulty);
+
+    int num_cell_rows = (DEFAULT_HEIGHT - 1) / 2;
+    int num_cell_cols = (DEFAULT_WIDTH - 1) / 2;
+    int total_cells = num_cell_rows * num_cell_cols;
+
+    /* Chemins multiples : plus de murs ouverts qu'un arbre couvrant strict (total_cells - 1) */
+    mu_check(count_open_internal_walls(maze) > (total_cells - 1));
+
+    /* Présence des monstres */
+    mu_check(maze->monster_count >= 2);
+    bool has_ghost = false;
+    bool has_ogre = false;
+    for (int i = 0; i < maze->monster_count; i++) {
+        if (maze->monsters[i].type == MONSTER_GHOST) has_ghost = true;
+        if (maze->monsters[i].type == MONSTER_OGRE) has_ogre = true;
+    }
+    mu_check(has_ghost == true);
+    mu_check(has_ogre == true);
+
+    maze_free(maze);
+}
+
+/**
+ * @brief Cas nominal : sauvegarde et rechargement d'un labyrinthe difficile avec ses monstres.
+ */
+MU_TEST(test_cas_nominal_sauvegarde_chargement_difficulte_et_monstres) {
+    const char *save_path = "saves/test_save_hard.cfg";
+    Maze *m1 = maze_create(7, 9);
+    mu_check(m1 != NULL);
+    mu_assert_int_eq(0, maze_generate_with_difficulty(m1, DIFF_HARD));
+    mu_assert_int_eq(0, maze_save(m1, save_path));
+
+    Maze *m2 = maze_load(save_path);
+    mu_check(m2 != NULL);
+    mu_assert_int_eq(DIFF_HARD, m2->difficulty);
+    mu_check(m2->monster_count >= 2);
+
+    maze_free(m1);
+    maze_free(m2);
+    remove(save_path);
+}
+
+/**
+ * @brief Cas limite : le mode facile produit un arbre parfait sans aucun monstre.
+ */
+MU_TEST(test_cas_limite_mode_facile_sans_monstre) {
+    Maze *maze = maze_create(DEFAULT_HEIGHT, DEFAULT_WIDTH);
+    mu_check(maze != NULL);
+    mu_assert_int_eq(0, maze_generate_with_difficulty(maze, DIFF_EASY));
+
+    mu_assert_int_eq(DIFF_EASY, maze->difficulty);
+    mu_assert_int_eq(0, maze->monster_count);
+
+    int num_cell_rows = (DEFAULT_HEIGHT - 1) / 2;
+    int num_cell_cols = (DEFAULT_WIDTH - 1) / 2;
+    int total_cells = num_cell_rows * num_cell_cols;
+
+    mu_assert_int_eq(total_cells - 1, count_open_internal_walls(maze));
+
+    maze_free(maze);
+}
+
+/**
  * @brief Cas d'erreur : manipulation de pointeurs NULL sur génération, affichage et déplacement.
  */
 MU_TEST(test_cas_erreur_pointeurs_null) {
@@ -649,6 +720,8 @@ MU_TEST_SUITE(maze_test_suite) {
     MU_RUN_TEST(test_cas_nominal_interactions_objets);
     MU_RUN_TEST(test_cas_nominal_reinitialisation_etat_jeu);
     MU_RUN_TEST(test_cas_nominal_sauvegarde_chargement_objets);
+    MU_RUN_TEST(test_cas_nominal_generation_difficile_chemins_multiples);
+    MU_RUN_TEST(test_cas_nominal_sauvegarde_chargement_difficulte_et_monstres);
     MU_RUN_TEST(test_cas_limite_taille_minimale_3x3);
     MU_RUN_TEST(test_cas_limite_couloir_horizontal_3x25);
     MU_RUN_TEST(test_cas_limite_couloir_vertical_11x3);
@@ -656,6 +729,7 @@ MU_TEST_SUITE(maze_test_suite) {
     MU_RUN_TEST(test_cas_limite_detection_sortie);
     MU_RUN_TEST(test_cas_limite_sortie_verrouillee_sans_cle);
     MU_RUN_TEST(test_cas_limite_score_plancher_zero);
+    MU_RUN_TEST(test_cas_limite_mode_facile_sans_monstre);
     MU_RUN_TEST(test_cas_limite_free_null);
     MU_RUN_TEST(test_cas_aleatoire_variabilite_et_validite_multiples);
     MU_RUN_TEST(test_cas_erreur_dimensions_paires);

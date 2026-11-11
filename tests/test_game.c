@@ -223,6 +223,23 @@ MU_TEST(test_game_erreur_chargement_fichier_corrompu) {
 }
 
 /**
+ * @brief Cas nominal : déroulement d'une session de jeu en mode difficile avec monstres actifs.
+ */
+MU_TEST(test_game_nominal_partie_difficile_avec_monstres) {
+    Maze *maze = maze_create(DEFAULT_HEIGHT, DEFAULT_WIDTH);
+    mu_check(maze != NULL);
+    mu_assert_int_eq(0, maze_generate_with_difficulty(maze, DIFF_HARD));
+    mu_assert_int_eq(DIFF_HARD, maze->difficulty);
+    mu_check(maze->monster_count >= 2);
+
+    /* Déplacement initial du joueur dans le labyrinthe */
+    mu_check(maze_move(maze, 0, 1) == true);
+    mu_assert_int_eq(1, maze->move_count);
+
+    maze_free(maze);
+}
+
+/**
  * @brief Cas d'erreur : vérification de l'intégrité face à un labyrinthe NULL.
  */
 MU_TEST(test_game_erreur_pointeurs_null) {
@@ -236,6 +253,7 @@ MU_TEST(test_game_erreur_pointeurs_null) {
 MU_TEST_SUITE(game_test_suite) {
     MU_RUN_TEST(test_game_nominal_partie_resolue_avec_succes);
     MU_RUN_TEST(test_game_nominal_chargement_et_rejouabilite);
+    MU_RUN_TEST(test_game_nominal_partie_difficile_avec_monstres);
     MU_RUN_TEST(test_game_limite_resolution_3x3);
     MU_RUN_TEST(test_game_limite_abandon_partie);
     MU_RUN_TEST(test_game_aleatoire_resolutions_multiples);
