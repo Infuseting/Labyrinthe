@@ -610,6 +610,10 @@ bool maze_move(Maze *maze, int dx, int dy) {
     return true;
 }
 
+bool maze_wait(Maze *maze) {
+    return maze_move(maze, 0, 0);
+}
+
 bool maze_is_exit_reached(const Maze *maze) {
     if (!maze) {
         return false;

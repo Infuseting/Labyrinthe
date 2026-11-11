@@ -155,6 +155,17 @@ Maze *maze_load(const char *filepath);
 bool maze_move(Maze *maze, int dx, int dy);
 
 /**
+ * @brief Fait passer un tour au joueur sur place (attente).
+ *
+ * Décrémente le score de MOVE_COST (1 point), incrémente le nombre de pas/tours (move_count),
+ * et met à jour le déplacement des monstres autonomes.
+ *
+ * @param[in,out] maze Pointeur vers le labyrinthe.
+ * @return true si le tour a pu être passé avec succès, false si maze est NULL.
+ */
+bool maze_wait(Maze *maze);
+
+/**
  * @brief Vérifie si le joueur a atteint la porte de sortie.
  *
  * @param[in] maze Pointeur vers le labyrinthe.

@@ -25,6 +25,7 @@ typedef enum {
     DIR_DOWN,
     DIR_LEFT,
     DIR_RIGHT,
+    DIR_WAIT,
     DIR_QUIT,
     DIR_NONE
 } Direction;
@@ -119,6 +120,8 @@ static Direction key_to_direction(char key) {
         case 'd':
         case 'D':
             return DIR_RIGHT;
+        case ' ':
+            return DIR_WAIT;
         case 'c':
         case 'C':
         case 27:
@@ -246,7 +249,7 @@ static void game_action_play(Maze **current_maze, const char *maze_name) {
     while (1) {
         ui_clear_screen();
         printf("Deplacez-vous avec Z/Fleches (haut), Q (gauche), S (bas), D (droite).\n");
-        printf("Appuyez sur C pour abandonner et revenir au menu.\n");
+        printf("Appuyez sur Espace pour attendre (sur place), C pour abandonner.\n");
 
         ui_display_hud(maze->score, maze->move_count, maze->has_key,
                        (int)maze->difficulty, maze->last_alert);
@@ -281,7 +284,7 @@ static void game_action_play(Maze **current_maze, const char *maze_name) {
         }
 
         char key = ui_get_key();
-        while (key == '\n' || key == '\r' || key == ' ') {
+        while (key == '\n' || key == '\r') {
             key = ui_get_key();
         }
         if (key == 0) {
@@ -305,6 +308,9 @@ static void game_action_play(Maze **current_maze, const char *maze_name) {
                 break;
             case DIR_RIGHT:
                 maze_move(maze, 1, 0);
+                break;
+            case DIR_WAIT:
+                maze_wait(maze);
                 break;
             default:
                 break;

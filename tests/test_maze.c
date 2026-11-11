@@ -752,12 +752,77 @@ MU_TEST(test_cas_limite_chargement_fallback_sans_cle_sans_case_libre) {
 }
 
 /**
+ * @brief Cas nominal : attente sur place (passage de tour avec la touche Espace).
+ */
+MU_TEST(test_cas_nominal_passer_tour_attente) {
+    Maze *maze = maze_create(DEFAULT_HEIGHT, DEFAULT_WIDTH);
+    mu_check(maze != NULL);
+    mu_assert_int_eq(0, maze_generate(maze));
+
+    int init_x = maze->player.x;
+    int init_y = maze->player.y;
+    int init_score = maze->score;
+    int init_moves = maze->move_count;
+
+    /* Un tour passé sur place */
+    mu_check(maze_wait(maze) == true);
+    mu_assert_int_eq(init_x, maze->player.x);
+    mu_assert_int_eq(init_y, maze->player.y);
+    mu_assert_int_eq(init_score - MOVE_COST, maze->score);
+    mu_assert_int_eq(init_moves + 1, maze->move_count);
+    mu_check(maze->trail_count >= 1);
+    mu_assert_int_eq(init_x, maze->trail[0].x);
+    mu_assert_int_eq(init_y, maze->trail[0].y);
+
+    /* Deuxième tour passé sur place */
+    mu_check(maze_wait(maze) == true);
+    mu_assert_int_eq(init_x, maze->player.x);
+    mu_assert_int_eq(init_y, maze->player.y);
+    mu_assert_int_eq(init_score - 2 * MOVE_COST, maze->score);
+    mu_assert_int_eq(init_moves + 2, maze->move_count);
+
+    /* Vérification que le score plancher reste à 0 */
+    maze->score = 0;
+    mu_check(maze_wait(maze) == true);
+    mu_assert_int_eq(0, maze->score);
+
+    maze_free(maze);
+}
+
+/**
+ * @brief Cas nominal : en mode difficile, l'attente sur place déclenche le déplacement des monstres.
+ */
+MU_TEST(test_cas_nominal_attente_difficile_deplacement_monstres) {
+    Maze *maze = maze_create(DEFAULT_HEIGHT, DEFAULT_WIDTH);
+    mu_check(maze != NULL);
+    mu_assert_int_eq(0, maze_generate_with_difficulty(maze, DIFF_HARD));
+    mu_check(maze->monster_count >= 2);
+
+    int prev_x = maze->monsters[0].x;
+    int prev_y = maze->monsters[0].y;
+    bool moved = false;
+
+    /* Passer jusqu'à 10 tours pour observer le déplacement des monstres */
+    for (int t = 0; t < 10; t++) {
+        mu_check(maze_wait(maze) == true);
+        if (maze->monsters[0].x != prev_x || maze->monsters[0].y != prev_y) {
+            moved = true;
+            break;
+        }
+    }
+    mu_check(moved == true);
+
+    maze_free(maze);
+}
+
+/**
  * @brief Cas d'erreur : manipulation de pointeurs NULL sur génération, affichage et déplacement.
  */
 MU_TEST(test_cas_erreur_pointeurs_null) {
     mu_assert_int_eq(-1, maze_generate(NULL));
     maze_print(NULL);
     mu_check(maze_move(NULL, 1, 0) == false);
+    mu_check(maze_wait(NULL) == false);
     mu_check(maze_is_exit_reached(NULL) == false);
     mu_check(true);
 }
@@ -793,6 +858,8 @@ MU_TEST_SUITE(maze_test_suite) {
     MU_RUN_TEST(test_cas_erreur_dimensions_trop_petites_ou_negatives);
     MU_RUN_TEST(test_cas_erreur_fichiers_sauvegarde_et_chargement);
     MU_RUN_TEST(test_cas_erreur_pointeurs_null);
+    MU_RUN_TEST(test_cas_nominal_passer_tour_attente);
+    MU_RUN_TEST(test_cas_nominal_attente_difficile_deplacement_monstres);
 }
 
 /**

@@ -240,10 +240,34 @@ MU_TEST(test_game_nominal_partie_difficile_avec_monstres) {
 }
 
 /**
+ * @brief Cas nominal : attente sur place (passage de tour) au cours d'une partie.
+ */
+MU_TEST(test_game_nominal_attente_sur_place) {
+    Maze *maze = maze_create(DEFAULT_HEIGHT, DEFAULT_WIDTH);
+    mu_check(maze != NULL);
+    mu_assert_int_eq(0, maze_generate(maze));
+
+    mu_check(maze_move(maze, 0, 1) == true);
+    int prev_x = maze->player.x;
+    int prev_y = maze->player.y;
+    int prev_score = maze->score;
+    int prev_moves = maze->move_count;
+
+    mu_check(maze_wait(maze) == true);
+    mu_assert_int_eq(prev_x, maze->player.x);
+    mu_assert_int_eq(prev_y, maze->player.y);
+    mu_assert_int_eq(prev_score - MOVE_COST, maze->score);
+    mu_assert_int_eq(prev_moves + 1, maze->move_count);
+
+    maze_free(maze);
+}
+
+/**
  * @brief Cas d'erreur : vérification de l'intégrité face à un labyrinthe NULL.
  */
 MU_TEST(test_game_erreur_pointeurs_null) {
     mu_check(maze_move(NULL, 0, 1) == false);
+    mu_check(maze_wait(NULL) == false);
     mu_check(maze_is_exit_reached(NULL) == false);
 }
 
@@ -254,6 +278,7 @@ MU_TEST_SUITE(game_test_suite) {
     MU_RUN_TEST(test_game_nominal_partie_resolue_avec_succes);
     MU_RUN_TEST(test_game_nominal_chargement_et_rejouabilite);
     MU_RUN_TEST(test_game_nominal_partie_difficile_avec_monstres);
+    MU_RUN_TEST(test_game_nominal_attente_sur_place);
     MU_RUN_TEST(test_game_limite_resolution_3x3);
     MU_RUN_TEST(test_game_limite_abandon_partie);
     MU_RUN_TEST(test_game_aleatoire_resolutions_multiples);
