@@ -9,6 +9,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include "score.h"
 
 /**
  * @brief Efface l'écran du terminal.
@@ -30,7 +31,7 @@ void ui_display_menu(bool has_active_maze);
 char ui_get_key(void);
 
 /**
- * @brief Demande à l'utilisateur de choisir une option dans le menu.
+ * @brief Demande à l'utilisateur de choisir une option dans le menu (1 à 5).
  *
  * @return Entier correspondant au choix sélectionné.
  */
@@ -68,5 +69,22 @@ void ui_list_saved_mazes(const char *directory);
  * @param[in] message Message à afficher.
  */
 void ui_display_message(const char *message);
+
+/**
+ * @brief Affiche le bandeau d'état en cours de partie (Score, Déplacements, Clé).
+ *
+ * @param[in] score Score actuel du joueur.
+ * @param[in] move_count Nombre de déplacements effectués.
+ * @param[in] has_key Indique si le joueur a ramassé la clé.
+ */
+void ui_display_hud(int score, int move_count, bool has_key);
+
+/**
+ * @brief Affiche le tableau des 10 meilleurs scores d'un labyrinthe.
+ *
+ * @param[in] board Pointeur vers le tableau des scores.
+ * @param[in] maze_name Nom du labyrinthe concerné.
+ */
+void ui_display_scoreboard(const ScoreBoard *board, const char *maze_name);
 
 #endif

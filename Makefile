@@ -11,6 +11,7 @@ OBJ_DIR   = $(BUILD_DIR)/obj
 # Fichiers sources et objets
 SRC      = $(wildcard $(SRC_DIR)/*.c)
 OBJ      = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRC))
+INCLUDES = $(wildcard include/*.h)
 
 # Cibles (les executables sont generes dans build/)
 TARGET      = $(BUILD_DIR)/labyrinthe
@@ -28,10 +29,10 @@ all: $(TARGET)
 $(TARGET): $(OBJ) | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(INCLUDES) | $(OBJ_DIR)
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
-$(OBJ_DIR)/%.o: $(TEST_DIR)/%.c | $(OBJ_DIR)
+$(OBJ_DIR)/%.o: $(TEST_DIR)/%.c $(INCLUDES) | $(OBJ_DIR)
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
 $(BUILD_DIR):

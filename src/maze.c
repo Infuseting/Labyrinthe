@@ -36,6 +36,9 @@ Maze *maze_create(int height, int width) {
     maze->player.y = 0;
     maze->exit.x = width - 2;
     maze->exit.y = height - 1;
+    maze->has_key = false;
+    maze->score = BASE_SCORE;
+    maze->move_count = 0;
     maze->trail_count = 0;
     for (int i = 0; i < MAX_TRAIL; i++) {
         maze->trail[i].x = -1;
@@ -193,6 +196,8 @@ int maze_generate(Maze *maze) {
     maze->grid[maze->player.y][maze->player.x] = EMPTY;
     maze->grid[maze->exit.y][maze->exit.x] = EMPTY;
 
+    maze_spawn_objects(maze, NUM_BONUSES, NUM_MALUSES);
+
     return 0;
 }
 
@@ -311,6 +316,12 @@ Maze *maze_load(const char *filepath) {
                 maze->exit.x = c;
                 maze->exit.y = r;
                 maze->grid[r][c] = EMPTY;
+            } else if (current_char == KEY) {
+                maze->grid[r][c] = KEY;
+            } else if (current_char == BONUS) {
+                maze->grid[r][c] = BONUS;
+            } else if (current_char == MALUS) {
+                maze->grid[r][c] = MALUS;
             } else if (current_char == WALL) {
                 maze->grid[r][c] = WALL;
             } else {
@@ -349,6 +360,12 @@ bool maze_move(Maze *maze, int dx, int dy) {
         return false;
     }
 
+    if (next_x == maze->exit.x && next_y == maze->exit.y) {
+        if (!maze->has_key) {
+            return false;
+        }
+    }
+
     if (maze->trail_count < MAX_TRAIL) {
         maze->trail_count++;
     }
@@ -359,6 +376,30 @@ bool maze_move(Maze *maze, int dx, int dy) {
 
     maze->player.x = next_x;
     maze->player.y = next_y;
+    maze->move_count++;
+
+    if (maze->score > MOVE_COST) {
+        maze->score -= MOVE_COST;
+    } else {
+        maze->score = 0;
+    }
+
+    Cell cell_type = maze->grid[next_y][next_x];
+    if (cell_type == KEY) {
+        maze->has_key = true;
+        maze->grid[next_y][next_x] = EMPTY;
+    } else if (cell_type == BONUS) {
+        maze->score += BONUS_POINTS;
+        maze->grid[next_y][next_x] = EMPTY;
+    } else if (cell_type == MALUS) {
+        if (maze->score >= MALUS_POINTS) {
+            maze->score -= MALUS_POINTS;
+        } else {
+            maze->score = 0;
+        }
+        maze->grid[next_y][next_x] = EMPTY;
+    }
+
     return true;
 }
 
@@ -380,4 +421,73 @@ void maze_reset_trail(Maze *maze) {
         maze->trail[i].x = -1;
         maze->trail[i].y = -1;
     }
+}
+
+void maze_spawn_objects(Maze *maze, int num_bonuses, int num_maluses) {
+    if (!maze || !maze->grid) {
+        return;
+    }
+
+    int num_cell_rows = (maze->height - 1) / 2;
+    int num_cell_cols = (maze->width - 1) / 2;
+    int total_cells = num_cell_rows * num_cell_cols;
+
+    Coords *free_cells = malloc((size_t)total_cells * sizeof(Coords));
+    if (!free_cells) {
+        return;
+    }
+
+    int free_count = 0;
+    for (int r = 0; r < num_cell_rows; r++) {
+        for (int c = 0; c < num_cell_cols; c++) {
+            int gr = 2 * r + 1;
+            int gc = 2 * c + 1;
+            if ((gr == 1 && gc == 1) || (gr == maze->height - 2 && gc == maze->width - 2)) {
+                continue;
+            }
+            if (maze->grid[gr][gc] == EMPTY) {
+                free_cells[free_count].x = gc;
+                free_cells[free_count].y = gr;
+                free_count++;
+            }
+        }
+    }
+
+    for (int i = free_count - 1; i > 0; i--) {
+        int j = rand() % (i + 1);
+        Coords tmp = free_cells[i];
+        free_cells[i] = free_cells[j];
+        free_cells[j] = tmp;
+    }
+
+    int placed = 0;
+    if (placed < free_count) {
+        maze->grid[free_cells[placed].y][free_cells[placed].x] = KEY;
+        placed++;
+    }
+
+    for (int b = 0; b < num_bonuses && placed < free_count; b++) {
+        maze->grid[free_cells[placed].y][free_cells[placed].x] = BONUS;
+        placed++;
+    }
+
+    for (int m = 0; m < num_maluses && placed < free_count; m++) {
+        maze->grid[free_cells[placed].y][free_cells[placed].x] = MALUS;
+        placed++;
+    }
+
+    free(free_cells);
+}
+
+void maze_reset_game_state(Maze *maze) {
+    if (!maze) {
+        return;
+    }
+
+    maze->player.x = 1;
+    maze->player.y = 0;
+    maze->has_key = false;
+    maze->score = BASE_SCORE;
+    maze->move_count = 0;
+    maze_reset_trail(maze);
 }

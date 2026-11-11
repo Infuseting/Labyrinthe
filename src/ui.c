@@ -29,7 +29,8 @@ void ui_display_menu(bool has_active_maze) {
     printf(" 1. Creer un labyrinthe\n");
     printf(" 2. Charger un labyrinthe\n");
     printf(" 3. Jouer\n");
-    printf(" 4. Quitter\n");
+    printf(" 4. Visualiser les 10 meilleurs scores\n");
+    printf(" 5. Quitter\n");
     printf("========================================\n");
 }
 
@@ -51,7 +52,7 @@ char ui_get_key(void) {
 }
 
 int ui_prompt_menu_choice(void) {
-    printf("Votre choix (1-4) : ");
+    printf("Votre choix (1-5) : ");
     fflush(stdout);
     char c = ui_get_key();
     while (c == '\n' || c == '\r' || c == ' ') {
@@ -59,10 +60,10 @@ int ui_prompt_menu_choice(void) {
     }
     if (c == 0) {
         printf("\n");
-        return 4;
+        return 5;
     }
     printf("%c\n", c);
-    if (c >= '1' && c <= '4') {
+    if (c >= '1' && c <= '5') {
         return c - '0';
     }
     return -1;
@@ -145,4 +146,32 @@ void ui_display_message(const char *message) {
     fflush(stdout);
     ui_get_key();
     printf("\n");
+}
+
+void ui_display_hud(int score, int move_count, bool has_key) {
+    printf("\n-------------------------------------------------------\n");
+    printf(" Score : %-5d pts | Deplacements : %-4d | Cle : [%s]\n",
+           score, move_count, has_key ? "OUI" : "NON");
+    printf(" Symboles : K = Cle, $ = Bonus (+200), ! = Piege (-100)\n");
+    printf("-------------------------------------------------------\n\n");
+}
+
+void ui_display_scoreboard(const ScoreBoard *board, const char *maze_name) {
+    printf("\n=======================================================\n");
+    printf("           TOP 10 DES MEILLEURS SCORES                 \n");
+    if (maze_name && strlen(maze_name) > 0) {
+        printf("           Labyrinthe : %s\n", maze_name);
+    }
+    printf("=======================================================\n");
+    if (!board || board->count == 0) {
+        printf("  Aucun score enregistre pour ce labyrinthe.\n");
+    } else {
+        printf("  RANG | %-20s | SCORE\n", "JOUEUR");
+        printf("  -----+----------------------+----------\n");
+        for (int i = 0; i < board->count; i++) {
+            printf("   %2d. | %-20s | %6d pts\n",
+                   i + 1, board->entries[i].name, board->entries[i].score);
+        }
+    }
+    printf("=======================================================\n\n");
 }

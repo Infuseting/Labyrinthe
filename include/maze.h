@@ -15,12 +15,36 @@
 /** @brief Largeur par défaut du labyrinthe. */
 #define DEFAULT_WIDTH 25
 
+/** @brief Nombre maximal de positions mémorisées pour la traînée du joueur. */
+#define MAX_TRAIL 10
+
+/** @brief Nombre de points attribués par trésor ramassé. */
+#define BONUS_POINTS 200
+
+/** @brief Nombre de points retirés par piège déclenché. */
+#define MALUS_POINTS 100
+
+/** @brief Coût en points par déplacement effectué. */
+#define MOVE_COST 1
+
+/** @brief Score de départ accordé au joueur en début de partie. */
+#define BASE_SCORE 1000
+
+/** @brief Nombre de trésors générés par défaut. */
+#define NUM_BONUSES 3
+
+/** @brief Nombre de pièges générés par défaut. */
+#define NUM_MALUSES 3
+
 /**
  * @brief Énumération représentant le type d'une cellule du labyrinthe.
  */
 typedef enum {
-    WALL = '#', /* Répresente un mur plein */
-    EMPTY = ' ' /* Répresente un espace vide */
+    WALL = '#',  /* Répresente un mur plein */
+    EMPTY = ' ', /* Répresente un espace vide */
+    KEY = 'K',   /* Clé permettant d'ouvrir la porte de sortie */
+    BONUS = '$', /* Trésor accordant un bonus de points */
+    MALUS = '!'  /* Piège infligeant un malus de points */
 } Cell;
 
 /**
@@ -30,9 +54,6 @@ typedef struct {
     int x; /* Coordonnées en colonne */
     int y; /* Coordonnées en ligne */
 } Coords;
-
-/** @brief Nombre maximal de positions mémorisées pour la traînée du joueur. */
-#define MAX_TRAIL 10
 
 /**
  * @brief Structure représentant un labyrinthe complet.
@@ -44,6 +65,9 @@ typedef struct {
     Coords exit;                /* Position de la sortie */
     Coords trail[MAX_TRAIL];    /* Historique des 10 dernières positions du joueur */
     int trail_count;            /* Nombre actuel de positions dans la traînée */
+    bool has_key;               /* Indique si le joueur possède la clé */
+    int score;                  /* Score actuel de la partie */
+    int move_count;             /* Nombre de déplacements effectués */
     Cell **grid;                /* Matrice 2D des cellules */
 } Maze;
 
@@ -101,7 +125,7 @@ Maze *maze_load(const char *filepath);
  * @param[in,out] maze Pointeur vers le labyrinthe.
  * @param[in] dx Déplacement horizontal (-1, 0, 1).
  * @param[in] dy Déplacement vertical (-1, 0, 1).
- * @return true si le déplacement a été effectué, false si bloqué par un mur ou hors limites.
+ * @return true si le déplacement a été effectué, false si bloqué par un mur, sortie verrouillée ou hors limites.
  */
 bool maze_move(Maze *maze, int dx, int dy);
 
@@ -119,5 +143,21 @@ bool maze_is_exit_reached(const Maze *maze);
  * @param[in,out] maze Pointeur vers le labyrinthe.
  */
 void maze_reset_trail(Maze *maze);
+
+/**
+ * @brief Répartit aléatoirement la clé, les trésors et les pièges sur les cases vides.
+ *
+ * @param[in,out] maze Pointeur vers le labyrinthe.
+ * @param[in] num_bonuses Nombre de trésors à placer.
+ * @param[in] num_maluses Nombre de pièges à placer.
+ */
+void maze_spawn_objects(Maze *maze, int num_bonuses, int num_maluses);
+
+/**
+ * @brief Réinitialise l'état de jeu du labyrinthe avant une nouvelle partie.
+ *
+ * @param[in,out] maze Pointeur vers le labyrinthe.
+ */
+void maze_reset_game_state(Maze *maze);
 
 #endif
