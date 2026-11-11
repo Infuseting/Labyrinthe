@@ -105,6 +105,47 @@ MU_TEST(test_ui_erreur_prompt_string_parametres_invalides) {
 }
 
 /**
+ * @brief Cas nominal : affichage du bandeau HUD avec différents états de jeu.
+ */
+MU_TEST(test_ui_nominal_affichage_hud) {
+    ui_display_hud(1000, 0, false);
+    ui_display_hud(850, 15, true);
+    mu_check(true);
+}
+
+/**
+ * @brief Cas nominal : affichage d'un tableau des scores garni.
+ */
+MU_TEST(test_ui_nominal_affichage_scoreboard) {
+    ScoreBoard board;
+    score_board_init(&board);
+    score_board_add(&board, "Arthur", 1200);
+    score_board_add(&board, "Joueur2", 950);
+    ui_display_scoreboard(&board, "LabyTest");
+    mu_check(true);
+}
+
+/**
+ * @brief Cas limite : affichage d'un tableau des scores vide ou sans nom de labyrinthe.
+ */
+MU_TEST(test_ui_limite_scoreboard_vide) {
+    ScoreBoard board;
+    score_board_init(&board);
+    ui_display_scoreboard(&board, NULL);
+    ui_display_scoreboard(&board, "");
+    mu_check(true);
+}
+
+/**
+ * @brief Cas d'erreur : appel de l'affichage du tableau de score avec pointeur NULL.
+ */
+MU_TEST(test_ui_erreur_scoreboard_null) {
+    ui_display_scoreboard(NULL, "Test");
+    ui_display_scoreboard(NULL, NULL);
+    mu_check(true);
+}
+
+/**
  * @brief Cas d'erreur : appel de listing sur un dossier inexistant ou un pointeur NULL.
  */
 MU_TEST(test_ui_erreur_listing_dossier_invalide) {
@@ -119,11 +160,15 @@ MU_TEST(test_ui_erreur_listing_dossier_invalide) {
 MU_TEST_SUITE(ui_test_suite) {
     MU_RUN_TEST(test_ui_nominal_affichage_menus);
     MU_RUN_TEST(test_ui_nominal_listing_dossier_saves);
+    MU_RUN_TEST(test_ui_nominal_affichage_hud);
+    MU_RUN_TEST(test_ui_nominal_affichage_scoreboard);
     MU_RUN_TEST(test_ui_limite_effacement_ecran);
     MU_RUN_TEST(test_ui_limite_listing_dossier_vide);
     MU_RUN_TEST(test_ui_limite_buffer_taille_minimale);
+    MU_RUN_TEST(test_ui_limite_scoreboard_vide);
     MU_RUN_TEST(test_ui_aleatoire_verification_noms_divers);
     MU_RUN_TEST(test_ui_erreur_prompt_string_parametres_invalides);
+    MU_RUN_TEST(test_ui_erreur_scoreboard_null);
     MU_RUN_TEST(test_ui_erreur_listing_dossier_invalide);
 }
 

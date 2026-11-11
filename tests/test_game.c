@@ -97,6 +97,12 @@ MU_TEST(test_game_nominal_partie_resolue_avec_succes) {
     for (int i = path_len - 2; i >= 0; i--) {
         int dx = path_c[i] - maze->player.x;
         int dy = path_r[i] - maze->player.y;
+        if (i == 0) {
+            /* Avant d'atteindre la sortie, vérifier que sans clé le passage est bloqué */
+            maze->has_key = false;
+            mu_check(maze_move(maze, dx, dy) == false);
+            maze->has_key = true;
+        }
         bool ok = maze_move(maze, dx, dy);
         mu_check(ok == true);
     }
@@ -145,6 +151,12 @@ MU_TEST(test_game_limite_resolution_3x3) {
     mu_check(maze_is_exit_reached(maze) == false);
     mu_check(maze_move(maze, 0, 1) == true);
     mu_check(maze_is_exit_reached(maze) == false);
+
+    /* Sortie verrouillée sans clé */
+    mu_check(maze_move(maze, 0, 1) == false);
+
+    /* Avec clé */
+    maze->has_key = true;
     mu_check(maze_move(maze, 0, 1) == true);
     mu_check(maze_is_exit_reached(maze) == true);
 

@@ -366,11 +366,189 @@ MU_TEST(test_cas_limite_detection_sortie) {
 }
 
 /**
+ * @brief Cas nominal : présence des objets (clé, bonus, malus) et initialisation du score.
+ */
+MU_TEST(test_cas_nominal_objets_et_scoring) {
+    Maze *maze = maze_create(DEFAULT_HEIGHT, DEFAULT_WIDTH);
+    mu_check(maze != NULL);
+    mu_assert_int_eq(0, maze_generate(maze));
+
+    mu_assert_int_eq(BASE_SCORE, maze->score);
+    mu_assert_int_eq(0, maze->move_count);
+    mu_check(maze->has_key == false);
+
+    int count_key = 0;
+    int count_bonus = 0;
+    int count_malus = 0;
+
+    for (int r = 0; r < maze->height; r++) {
+        for (int c = 0; c < maze->width; c++) {
+            if (maze->grid[r][c] == KEY) {
+                count_key++;
+            } else if (maze->grid[r][c] == BONUS) {
+                count_bonus++;
+            } else if (maze->grid[r][c] == MALUS) {
+                count_malus++;
+            }
+        }
+    }
+
+    mu_assert_int_eq(1, count_key);
+    mu_assert_int_eq(NUM_BONUSES, count_bonus);
+    mu_assert_int_eq(NUM_MALUSES, count_malus);
+
+    maze_free(maze);
+}
+
+/**
+ * @brief Cas nominal : ramassage des objets et impact arithmétique sur le score.
+ */
+MU_TEST(test_cas_nominal_interactions_objets) {
+    Maze *maze = maze_create(5, 5);
+    mu_check(maze != NULL);
+
+    maze->grid[1][1] = EMPTY;
+    maze->grid[1][2] = KEY;
+    maze->grid[1][3] = BONUS;
+    maze->grid[2][3] = MALUS;
+    maze->player.x = 1;
+    maze->player.y = 1;
+    maze->score = BASE_SCORE;
+    maze->has_key = false;
+
+    /* Déplacement vers la clé (1, 2) */
+    mu_check(maze_move(maze, 1, 0) == true);
+    mu_check(maze->has_key == true);
+    mu_check(maze->grid[1][2] == EMPTY);
+    mu_assert_int_eq(BASE_SCORE - MOVE_COST, maze->score);
+
+    /* Déplacement vers le bonus (1, 3) */
+    mu_check(maze_move(maze, 1, 0) == true);
+    mu_check(maze->grid[1][3] == EMPTY);
+    mu_assert_int_eq(BASE_SCORE - 2 * MOVE_COST + BONUS_POINTS, maze->score);
+
+    /* Déplacement vers le malus (2, 3) */
+    mu_check(maze_move(maze, 0, 1) == true);
+    mu_check(maze->grid[2][3] == EMPTY);
+    mu_assert_int_eq(BASE_SCORE - 3 * MOVE_COST + BONUS_POINTS - MALUS_POINTS, maze->score);
+
+    maze_free(maze);
+}
+
+/**
+ * @brief Cas nominal : réinitialisation de l'état de jeu avec maze_reset_game_state.
+ */
+MU_TEST(test_cas_nominal_reinitialisation_etat_jeu) {
+    Maze *maze = maze_create(5, 5);
+    mu_check(maze != NULL);
+
+    maze->player.x = 3;
+    maze->player.y = 3;
+    maze->has_key = true;
+    maze->score = 420;
+    maze->move_count = 17;
+    maze->trail_count = 5;
+
+    maze_reset_game_state(maze);
+
+    mu_assert_int_eq(1, maze->player.x);
+    mu_assert_int_eq(0, maze->player.y);
+    mu_check(maze->has_key == false);
+    mu_assert_int_eq(BASE_SCORE, maze->score);
+    mu_assert_int_eq(0, maze->move_count);
+    mu_assert_int_eq(0, maze->trail_count);
+
+    maze_free(maze);
+}
+
+/**
+ * @brief Cas nominal : sauvegarde et rechargement d'un labyrinthe contenant des objets dans le fichier .cfg.
+ */
+MU_TEST(test_cas_nominal_sauvegarde_chargement_objets) {
+    const char *path = "saves/test_objects_cfg.cfg";
+    Maze *m1 = maze_create(5, 5);
+    mu_check(m1 != NULL);
+
+    m1->grid[1][1] = KEY;
+    m1->grid[1][2] = BONUS;
+    m1->grid[1][3] = MALUS;
+
+    mu_assert_int_eq(0, maze_save(m1, path));
+
+    Maze *m2 = maze_load(path);
+    mu_check(m2 != NULL);
+    mu_check(m2->grid[1][1] == KEY);
+    mu_check(m2->grid[1][2] == BONUS);
+    mu_check(m2->grid[1][3] == MALUS);
+
+    maze_free(m1);
+    maze_free(m2);
+    remove(path);
+}
+
+/**
+ * @brief Cas limite : sortie verrouillée tant que la clé n'a pas été obtenue.
+ */
+MU_TEST(test_cas_limite_sortie_verrouillee_sans_cle) {
+    Maze *maze = maze_create(5, 5);
+    mu_check(maze != NULL);
+
+    maze->exit.x = 3;
+    maze->exit.y = 4;
+    maze->grid[3][3] = EMPTY;
+    maze->grid[4][3] = EMPTY;
+    maze->player.x = 3;
+    maze->player.y = 3;
+    maze->has_key = false;
+
+    /* Tente de sortir sans la clé : mouvement refusé */
+    mu_check(maze_move(maze, 0, 1) == false);
+    mu_assert_int_eq(3, maze->player.x);
+    mu_assert_int_eq(3, maze->player.y);
+    mu_check(maze_is_exit_reached(maze) == false);
+
+    /* Avec la clé obtenue : mouvement accepté */
+    maze->has_key = true;
+    mu_check(maze_move(maze, 0, 1) == true);
+    mu_assert_int_eq(3, maze->player.x);
+    mu_assert_int_eq(4, maze->player.y);
+    mu_check(maze_is_exit_reached(maze) == true);
+
+    maze_free(maze);
+}
+
+/**
+ * @brief Cas limite : le score ne descend jamais en dessous de 0 suite à malus ou déplacements.
+ */
+MU_TEST(test_cas_limite_score_plancher_zero) {
+    Maze *maze = maze_create(5, 5);
+    mu_check(maze != NULL);
+
+    maze->grid[1][1] = EMPTY;
+    maze->grid[1][2] = MALUS;
+    maze->player.x = 1;
+    maze->player.y = 1;
+    maze->score = 50;
+
+    mu_check(maze_move(maze, 1, 0) == true);
+    mu_assert_int_eq(0, maze->score);
+
+    /* Déplacement additionnel à score 0 reste à 0 */
+    maze->grid[1][3] = EMPTY;
+    mu_check(maze_move(maze, 1, 0) == true);
+    mu_assert_int_eq(0, maze->score);
+
+    maze_free(maze);
+}
+
+/**
  * @brief Cas limite : libération d'un pointeur NULL sans plantage.
  */
 MU_TEST(test_cas_limite_free_null) {
     maze_free(NULL);
     maze_reset_trail(NULL);
+    maze_reset_game_state(NULL);
+    maze_spawn_objects(NULL, 0, 0);
     mu_check(true);
 }
 
@@ -467,11 +645,17 @@ MU_TEST_SUITE(maze_test_suite) {
     MU_RUN_TEST(test_cas_nominal_sauvegarde_et_chargement);
     MU_RUN_TEST(test_cas_nominal_deplacement_joueur);
     MU_RUN_TEST(test_cas_nominal_trainee_10_positions);
+    MU_RUN_TEST(test_cas_nominal_objets_et_scoring);
+    MU_RUN_TEST(test_cas_nominal_interactions_objets);
+    MU_RUN_TEST(test_cas_nominal_reinitialisation_etat_jeu);
+    MU_RUN_TEST(test_cas_nominal_sauvegarde_chargement_objets);
     MU_RUN_TEST(test_cas_limite_taille_minimale_3x3);
     MU_RUN_TEST(test_cas_limite_couloir_horizontal_3x25);
     MU_RUN_TEST(test_cas_limite_couloir_vertical_11x3);
     MU_RUN_TEST(test_cas_limite_collisions_murs_et_bordures);
     MU_RUN_TEST(test_cas_limite_detection_sortie);
+    MU_RUN_TEST(test_cas_limite_sortie_verrouillee_sans_cle);
+    MU_RUN_TEST(test_cas_limite_score_plancher_zero);
     MU_RUN_TEST(test_cas_limite_free_null);
     MU_RUN_TEST(test_cas_aleatoire_variabilite_et_validite_multiples);
     MU_RUN_TEST(test_cas_erreur_dimensions_paires);
