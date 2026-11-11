@@ -340,18 +340,19 @@ Maze *maze_load(const char *filepath) {
         return NULL;
     }
 
-    int height = 0;
-    int width = 0;
-    int diff_int = DIFF_EASY;
-    int parsed = fscanf(file, "%d %d %d", &height, &width, &diff_int);
-    if (parsed < 2) {
+    char header_line[128];
+    if (!fgets(header_line, sizeof(header_line), file)) {
         fclose(file);
         return NULL;
     }
 
-    int ch = fgetc(file);
-    while (ch != '\n' && ch != EOF) {
-        ch = fgetc(file);
+    int height = 0;
+    int width = 0;
+    int diff_int = DIFF_EASY;
+    int parsed = sscanf(header_line, "%d %d %d", &height, &width, &diff_int);
+    if (parsed < 2) {
+        fclose(file);
+        return NULL;
     }
 
     Maze *maze = maze_create(height, width);
@@ -363,6 +364,8 @@ Maze *maze_load(const char *filepath) {
     if (parsed >= 3 && (diff_int == DIFF_EASY || diff_int == DIFF_HARD)) {
         maze->difficulty = (Difficulty)diff_int;
     }
+
+    int key_count = 0;
 
     for (int r = 0; r < height; r++) {
         for (int c = 0; c < width; c++) {
@@ -386,6 +389,7 @@ Maze *maze_load(const char *filepath) {
                 maze->grid[r][c] = EMPTY;
             } else if (current_char == KEY) {
                 maze->grid[r][c] = KEY;
+                key_count++;
             } else if (current_char == BONUS) {
                 maze->grid[r][c] = BONUS;
             } else if (current_char == MALUS) {
@@ -423,6 +427,48 @@ Maze *maze_load(const char *filepath) {
     }
 
     fclose(file);
+
+    /* Fallback : si le labyrinthe charge ne comporte aucune cle (ex: labyrinthe issu
+     * des etapes 1 ou 2), on place automatiquement une cle sur une case vide pour que
+     * le joueur puisse deverrouiller la sortie. Si aucune case libre n'existe, on deverrouille
+     * directement la porte (has_key = true). */
+    if (key_count == 0) {
+        int num_free = 0;
+        for (int r = 0; r < height; r++) {
+            for (int c = 0; c < width; c++) {
+                if (maze->grid[r][c] == EMPTY &&
+                    !(r == maze->player.y && c == maze->player.x) &&
+                    !(r == maze->exit.y && c == maze->exit.x)) {
+                    num_free++;
+                }
+            }
+        }
+
+        if (num_free > 0) {
+            int target_idx = rand() % num_free;
+            int cur_idx = 0;
+            for (int r = 0; r < height; r++) {
+                for (int c = 0; c < width; c++) {
+                    if (maze->grid[r][c] == EMPTY &&
+                        !(r == maze->player.y && c == maze->player.x) &&
+                        !(r == maze->exit.y && c == maze->exit.x)) {
+                        if (cur_idx == target_idx) {
+                            maze->grid[r][c] = KEY;
+                            cur_idx++;
+                            break;
+                        }
+                        cur_idx++;
+                    }
+                }
+                if (cur_idx > target_idx) {
+                    break;
+                }
+            }
+        } else {
+            maze->has_key = true;
+        }
+    }
+
     return maze;
 }
 

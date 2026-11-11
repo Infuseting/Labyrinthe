@@ -697,6 +697,61 @@ MU_TEST(test_cas_limite_mode_facile_sans_monstre) {
 }
 
 /**
+ * @brief Cas limite : chargement d'un labyrinthe sans clé (étape 2) avec fallback automatique sur case vide.
+ */
+MU_TEST(test_cas_limite_chargement_fallback_sans_cle) {
+    const char *path = "saves/test_legacy_no_key.cfg";
+    FILE *f = fopen(path, "w");
+    mu_check(f != NULL);
+    /* Labyrinthe d'étape 2 sans clé, sans bonus, sans monstre */
+    fprintf(f, "5 5\n");
+    fprintf(f, "#o###\n");
+    fprintf(f, "#   #\n");
+    fprintf(f, "# # #\n");
+    fprintf(f, "#   #\n");
+    fprintf(f, "###-#\n");
+    fclose(f);
+
+    Maze *loaded = maze_load(path);
+    mu_check(loaded != NULL);
+
+    int key_found = 0;
+    for (int r = 0; r < loaded->height; r++) {
+        for (int c = 0; c < loaded->width; c++) {
+            if (loaded->grid[r][c] == KEY) {
+                key_found++;
+            }
+        }
+    }
+    mu_assert_int_eq(1, key_found);
+
+    maze_free(loaded);
+    remove(path);
+}
+
+/**
+ * @brief Cas limite : chargement d'un labyrinthe sans clé et sans case vide intermédiaire.
+ */
+MU_TEST(test_cas_limite_chargement_fallback_sans_cle_sans_case_libre) {
+    const char *path = "saves/test_no_free.cfg";
+    FILE *f = fopen(path, "w");
+    mu_check(f != NULL);
+    /* Labyrinthe 3x3 avec uniquement joueur et sortie, aucune case vide intermédiaire */
+    fprintf(f, "3 3\n");
+    fprintf(f, "#o#\n");
+    fprintf(f, "###\n");
+    fprintf(f, "#-#\n");
+    fclose(f);
+
+    Maze *loaded = maze_load(path);
+    mu_check(loaded != NULL);
+    mu_check(loaded->has_key == true);
+
+    maze_free(loaded);
+    remove(path);
+}
+
+/**
  * @brief Cas d'erreur : manipulation de pointeurs NULL sur génération, affichage et déplacement.
  */
 MU_TEST(test_cas_erreur_pointeurs_null) {
@@ -728,6 +783,8 @@ MU_TEST_SUITE(maze_test_suite) {
     MU_RUN_TEST(test_cas_limite_collisions_murs_et_bordures);
     MU_RUN_TEST(test_cas_limite_detection_sortie);
     MU_RUN_TEST(test_cas_limite_sortie_verrouillee_sans_cle);
+    MU_RUN_TEST(test_cas_limite_chargement_fallback_sans_cle);
+    MU_RUN_TEST(test_cas_limite_chargement_fallback_sans_cle_sans_case_libre);
     MU_RUN_TEST(test_cas_limite_score_plancher_zero);
     MU_RUN_TEST(test_cas_limite_mode_facile_sans_monstre);
     MU_RUN_TEST(test_cas_limite_free_null);
