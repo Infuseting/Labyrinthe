@@ -8,6 +8,7 @@
 #define MAZE_H
 
 #include <stdbool.h>
+#include "monster.h"
 
 /** @brief Hauteur par défaut du labyrinthe. */
 #define DEFAULT_HEIGHT 11
@@ -37,6 +38,14 @@
 #define NUM_MALUSES 3
 
 /**
+ * @brief Énumération des niveaux de difficulté du labyrinthe.
+ */
+typedef enum {
+    DIFF_EASY = 1, /**< Labyrinthe parfait avec bonus/malus sans monstre */
+    DIFF_HARD = 2  /**< Labyrinthe avec boucles (chemins multiples) et monstres */
+} Difficulty;
+
+/**
  * @brief Énumération représentant le type d'une cellule du labyrinthe.
  */
 typedef enum {
@@ -58,17 +67,21 @@ typedef struct {
 /**
  * @brief Structure représentant un labyrinthe complet.
  */
-typedef struct {
-    int height;                 /* Hauteur de la grille */
-    int width;                  /* Largeur de la grille */
-    Coords player;              /* Position du joueur */
-    Coords exit;                /* Position de la sortie */
-    Coords trail[MAX_TRAIL];    /* Historique des 10 dernières positions du joueur */
-    int trail_count;            /* Nombre actuel de positions dans la traînée */
-    bool has_key;               /* Indique si le joueur possède la clé */
-    int score;                  /* Score actuel de la partie */
-    int move_count;             /* Nombre de déplacements effectués */
-    Cell **grid;                /* Matrice 2D des cellules */
+typedef struct Maze {
+    int height;                     /* Hauteur de la grille */
+    int width;                      /* Largeur de la grille */
+    Difficulty difficulty;          /* Niveau de difficulté (Facile ou Difficile) */
+    Coords player;                  /* Position du joueur */
+    Coords exit;                    /* Position de la sortie */
+    Coords trail[MAX_TRAIL];        /* Historique des 10 dernières positions du joueur */
+    int trail_count;                /* Nombre actuel de positions dans la traînée */
+    bool has_key;                   /* Indique si le joueur possède la clé */
+    int score;                      /* Score actuel de la partie */
+    int move_count;                 /* Nombre de déplacements effectués */
+    Monster monsters[MAX_MONSTERS]; /* Monstres actifs dans le labyrinthe */
+    int monster_count;              /* Nombre actuel de monstres actifs */
+    char last_alert[128];           /* Message du dernier événement (ex: attaque de monstre) */
+    Cell **grid;                    /* Matrice 2D des cellules */
 } Maze;
 
 /**
@@ -88,12 +101,21 @@ Maze *maze_create(int height, int width);
 void maze_free(Maze *maze);
 
 /**
- * @brief Génère un labyrinthe parfait avec l'algorithme de fusion aléatoire de chemins.
+ * @brief Génère le labyrinthe selon son niveau de difficulté actuel.
  *
  * @param[out] maze Pointeur vers le labyrinthe à générer.
  * @return 0 en cas de succès, -1 en cas d'erreur.
  */
 int maze_generate(Maze *maze);
+
+/**
+ * @brief Génère le labyrinthe en appliquant explicitement le niveau de difficulté spécifié.
+ *
+ * @param[out] maze Pointeur vers le labyrinthe à générer.
+ * @param[in] difficulty Difficulté souhaitée (DIFF_EASY ou DIFF_HARD).
+ * @return 0 en cas de succès, -1 en cas d'erreur.
+ */
+int maze_generate_with_difficulty(Maze *maze, Difficulty difficulty);
 
 /**
  * @brief Affiche le labyrinthe sur la sortie standard.
@@ -152,6 +174,30 @@ void maze_reset_trail(Maze *maze);
  * @param[in] num_maluses Nombre de pièges à placer.
  */
 void maze_spawn_objects(Maze *maze, int num_bonuses, int num_maluses);
+
+/**
+ * @brief Fait apparaître les monstres (fantômes et ogres) sur des cases libres en mode difficile.
+ *
+ * @param[in,out] maze Pointeur vers le labyrinthe.
+ */
+void maze_spawn_monsters(Maze *maze);
+
+/**
+ * @brief Déplace tous les monstres du labyrinthe via leurs pointeurs de fonctions respectifs.
+ *
+ * @param[in,out] maze Pointeur vers le labyrinthe.
+ */
+void maze_update_monsters(Maze *maze);
+
+/**
+ * @brief Recherche si un monstre est présent aux coordonnées spécifiées.
+ *
+ * @param[in] maze Pointeur vers le labyrinthe.
+ * @param[in] x Colonne recherchée.
+ * @param[in] y Ligne recherchée.
+ * @return Pointeur constant vers le monstre trouvé, ou NULL si aucun.
+ */
+const Monster *maze_get_monster_at(const Maze *maze, int x, int y);
 
 /**
  * @brief Réinitialise l'état de jeu du labyrinthe avant une nouvelle partie.

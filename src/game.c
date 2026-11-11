@@ -147,6 +147,8 @@ static void game_action_create(Maze **current_maze, char *current_name, size_t m
 
     int height = ui_prompt_odd_int("Hauteur (nombre impair >= 3) : ", 3);
     int width = ui_prompt_odd_int("Largeur (nombre impair >= 3) : ", 3);
+    int diff_choice = ui_prompt_difficulty();
+    Difficulty difficulty = (diff_choice == 2) ? DIFF_HARD : DIFF_EASY;
 
     Maze *new_maze = maze_create(height, width);
     if (!new_maze) {
@@ -154,7 +156,7 @@ static void game_action_create(Maze **current_maze, char *current_name, size_t m
         return;
     }
 
-    if (maze_generate(new_maze) != 0) {
+    if (maze_generate_with_difficulty(new_maze, difficulty) != 0) {
         maze_free(new_maze);
         ui_display_message("Erreur lors de la generation du labyrinthe.");
         return;
@@ -246,7 +248,8 @@ static void game_action_play(Maze **current_maze, const char *maze_name) {
         printf("Deplacez-vous avec Z (haut), Q (gauche), S (bas), D (droite).\n");
         printf("Appuyez sur C pour abandonner et revenir au menu.\n");
 
-        ui_display_hud(maze->score, maze->move_count, maze->has_key);
+        ui_display_hud(maze->score, maze->move_count, maze->has_key,
+                       (int)maze->difficulty, maze->last_alert);
         maze_print(maze);
 
         if (maze_is_exit_reached(maze)) {

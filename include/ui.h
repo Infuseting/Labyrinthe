@@ -64,6 +64,13 @@ int ui_prompt_odd_int(const char *prompt, int min_val);
 void ui_list_saved_mazes(const char *directory);
 
 /**
+ * @brief Demande à l'utilisateur de choisir un niveau de difficulté (1: Facile, 2: Difficile).
+ *
+ * @return 1 pour Facile, 2 pour Difficile.
+ */
+int ui_prompt_difficulty(void);
+
+/**
  * @brief Affiche un message d'information ou d'erreur et attend un appui sur une touche.
  *
  * @param[in] message Message à afficher.
@@ -71,13 +78,15 @@ void ui_list_saved_mazes(const char *directory);
 void ui_display_message(const char *message);
 
 /**
- * @brief Affiche le bandeau d'état en cours de partie (Score, Déplacements, Clé).
+ * @brief Affiche le bandeau d'état en cours de partie (Score, Déplacements, Clé, Difficulté, Alertes).
  *
  * @param[in] score Score actuel du joueur.
  * @param[in] move_count Nombre de déplacements effectués.
  * @param[in] has_key Indique si le joueur a ramassé la clé.
+ * @param[in] difficulty Niveau de difficulté (1: Facile, 2: Difficile).
+ * @param[in] alert Message d'alerte récent (ex: attaque de monstre), ou NULL si aucun.
  */
-void ui_display_hud(int score, int move_count, bool has_key);
+void ui_display_hud(int score, int move_count, bool has_key, int difficulty, const char *alert);
 
 /**
  * @brief Affiche le tableau des 10 meilleurs scores d'un labyrinthe.

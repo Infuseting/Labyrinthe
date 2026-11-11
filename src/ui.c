@@ -138,6 +138,30 @@ void ui_list_saved_mazes(const char *directory) {
     printf("\n");
 }
 
+int ui_prompt_difficulty(void) {
+    while (1) {
+        printf("Niveau de difficulte :\n");
+        printf(" 1. Facile (labyrinthe parfait, sans monstre)\n");
+        printf(" 2. Difficile (chemins multiples, fantomes & ogres)\n");
+        printf("Votre choix (1-2) : ");
+        fflush(stdout);
+
+        char c = ui_get_key();
+        while (c == '\n' || c == '\r' || c == ' ') {
+            c = ui_get_key();
+        }
+        if (c == 0) {
+            printf("\n");
+            return 1;
+        }
+        printf("%c\n", c);
+        if (c == '1' || c == '2') {
+            return c - '0';
+        }
+        printf("Choix invalide. Veuillez entrer 1 ou 2.\n\n");
+    }
+}
+
 void ui_display_message(const char *message) {
     if (message) {
         printf("\n%s\n", message);
@@ -148,11 +172,19 @@ void ui_display_message(const char *message) {
     printf("\n");
 }
 
-void ui_display_hud(int score, int move_count, bool has_key) {
+void ui_display_hud(int score, int move_count, bool has_key, int difficulty, const char *alert) {
+    const char *diff_str = (difficulty == 2) ? "DIFFICILE" : "FACILE";
     printf("\n-------------------------------------------------------\n");
-    printf(" Score : %-5d pts | Deplacements : %-4d | Cle : [%s]\n",
-           score, move_count, has_key ? "OUI" : "NON");
-    printf(" Symboles : K = Cle, $ = Bonus (+200), ! = Piege (-100)\n");
+    printf(" Score : %-5d pts | Pas : %-4d | Cle : [%s] | Mode : %s\n",
+           score, move_count, has_key ? "OUI" : "NON", diff_str);
+    if (difficulty == 2) {
+        printf(" Symboles : K=Cle, $=Bonus, !=Piege, F=Fantome, O=Ogre\n");
+    } else {
+        printf(" Symboles : K = Cle, $ = Bonus (+200), ! = Piege (-100)\n");
+    }
+    if (alert && strlen(alert) > 0) {
+        printf(" >>> %s <<<\n", alert);
+    }
     printf("-------------------------------------------------------\n\n");
 }
 

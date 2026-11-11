@@ -6,7 +6,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "maze.h"
+#include "monster.h"
 
 /**
  * @brief Structure représentant un mur intérieur entre deux cellules.
@@ -32,6 +34,7 @@ Maze *maze_create(int height, int width) {
 
     maze->height = height;
     maze->width = width;
+    maze->difficulty = DIFF_EASY;
     maze->player.x = 1;
     maze->player.y = 0;
     maze->exit.x = width - 2;
@@ -40,6 +43,8 @@ Maze *maze_create(int height, int width) {
     maze->score = BASE_SCORE;
     maze->move_count = 0;
     maze->trail_count = 0;
+    maze->monster_count = 0;
+    maze->last_alert[0] = '\0';
     for (int i = 0; i < MAX_TRAIL; i++) {
         maze->trail[i].x = -1;
         maze->trail[i].y = -1;
@@ -84,11 +89,15 @@ void maze_free(Maze *maze) {
     free(maze);
 }
 
-int maze_generate(Maze *maze) {
+int maze_generate_with_difficulty(Maze *maze, Difficulty difficulty) {
     if (!maze || !maze->grid || maze->height < 3 || maze->width < 3 ||
         maze->height % 2 == 0 || maze->width % 2 == 0) {
         return -1;
     }
+
+    maze->difficulty = difficulty;
+    maze->monster_count = 0;
+    maze->last_alert[0] = '\0';
 
     for (int r = 0; r < maze->height; r++) {
         for (int c = 0; c < maze->width; c++) {
@@ -180,6 +189,25 @@ int maze_generate(Maze *maze) {
         }
     }
 
+    /* Mode difficile : ouvrir des murs intérieurs supplémentaires pour créer des cycles */
+    if (difficulty == DIFF_HARD && remaining_walls > 0) {
+        int extra_to_open = (total_cells - 1) / 5;
+        if (extra_to_open < 1) {
+            extra_to_open = 1;
+        }
+        if (extra_to_open > remaining_walls) {
+            extra_to_open = remaining_walls;
+        }
+
+        for (int k = 0; k < extra_to_open; k++) {
+            int r_idx = rand() % remaining_walls;
+            Wall extra = walls[r_idx];
+            walls[r_idx] = walls[remaining_walls - 1];
+            remaining_walls--;
+            maze->grid[extra.wall_row][extra.wall_col] = EMPTY;
+        }
+    }
+
     free(walls);
     free(cell_ids);
 
@@ -198,7 +226,18 @@ int maze_generate(Maze *maze) {
 
     maze_spawn_objects(maze, NUM_BONUSES, NUM_MALUSES);
 
+    if (difficulty == DIFF_HARD) {
+        maze_spawn_monsters(maze);
+    }
+
     return 0;
+}
+
+int maze_generate(Maze *maze) {
+    if (!maze) {
+        return -1;
+    }
+    return maze_generate_with_difficulty(maze, maze->difficulty);
 }
 
 /**
@@ -218,6 +257,19 @@ static bool is_in_trail(const Maze *maze, int r, int c) {
     return false;
 }
 
+const Monster *maze_get_monster_at(const Maze *maze, int x, int y) {
+    if (!maze) {
+        return NULL;
+    }
+
+    for (int i = 0; i < maze->monster_count; i++) {
+        if (maze->monsters[i].x == x && maze->monsters[i].y == y) {
+            return &maze->monsters[i];
+        }
+    }
+    return NULL;
+}
+
 void maze_print(const Maze *maze) {
     if (!maze || !maze->grid) {
         return;
@@ -229,10 +281,15 @@ void maze_print(const Maze *maze) {
                 putchar('o');
             } else if (r == maze->exit.y && c == maze->exit.x) {
                 putchar('-');
-            } else if (is_in_trail(maze, r, c)) {
-                fputs("·", stdout);
             } else {
-                putchar((char)maze->grid[r][c]);
+                const Monster *m = maze_get_monster_at(maze, c, r);
+                if (m) {
+                    putchar((char)m->type);
+                } else if (is_in_trail(maze, r, c)) {
+                    fputs("·", stdout);
+                } else {
+                    putchar((char)maze->grid[r][c]);
+                }
             }
         }
         putchar('\n');
@@ -249,7 +306,7 @@ int maze_save(const Maze *maze, const char *filepath) {
         return -1;
     }
 
-    fprintf(file, "%d %d\n", maze->height, maze->width);
+    fprintf(file, "%d %d %d\n", maze->height, maze->width, (int)maze->difficulty);
 
     for (int r = 0; r < maze->height; r++) {
         for (int c = 0; c < maze->width; c++) {
@@ -258,7 +315,12 @@ int maze_save(const Maze *maze, const char *filepath) {
             } else if (r == maze->exit.y && c == maze->exit.x) {
                 fputc('-', file);
             } else {
-                fputc((char)maze->grid[r][c], file);
+                const Monster *m = maze_get_monster_at(maze, c, r);
+                if (m) {
+                    fputc((char)m->type, file);
+                } else {
+                    fputc((char)maze->grid[r][c], file);
+                }
             }
         }
         fputc('\n', file);
@@ -280,7 +342,9 @@ Maze *maze_load(const char *filepath) {
 
     int height = 0;
     int width = 0;
-    if (fscanf(file, "%d %d", &height, &width) != 2) {
+    int diff_int = DIFF_EASY;
+    int parsed = fscanf(file, "%d %d %d", &height, &width, &diff_int);
+    if (parsed < 2) {
         fclose(file);
         return NULL;
     }
@@ -294,6 +358,10 @@ Maze *maze_load(const char *filepath) {
     if (!maze) {
         fclose(file);
         return NULL;
+    }
+
+    if (parsed >= 3 && (diff_int == DIFF_EASY || diff_int == DIFF_HARD)) {
+        maze->difficulty = (Difficulty)diff_int;
     }
 
     for (int r = 0; r < height; r++) {
@@ -322,6 +390,20 @@ Maze *maze_load(const char *filepath) {
                 maze->grid[r][c] = BONUS;
             } else if (current_char == MALUS) {
                 maze->grid[r][c] = MALUS;
+            } else if (current_char == MONSTER_GHOST) {
+                if (maze->monster_count < MAX_MONSTERS) {
+                    monster_init(&maze->monsters[maze->monster_count], MONSTER_GHOST, c, r);
+                    maze->monster_count++;
+                }
+                maze->grid[r][c] = EMPTY;
+                maze->difficulty = DIFF_HARD;
+            } else if (current_char == MONSTER_OGRE) {
+                if (maze->monster_count < MAX_MONSTERS) {
+                    monster_init(&maze->monsters[maze->monster_count], MONSTER_OGRE, c, r);
+                    maze->monster_count++;
+                }
+                maze->grid[r][c] = EMPTY;
+                maze->difficulty = DIFF_HARD;
             } else if (current_char == WALL) {
                 maze->grid[r][c] = WALL;
             } else {
@@ -342,6 +424,36 @@ Maze *maze_load(const char *filepath) {
 
     fclose(file);
     return maze;
+}
+
+void maze_update_monsters(Maze *maze) {
+    if (!maze) {
+        return;
+    }
+
+    for (int i = 0; i < maze->monster_count; i++) {
+        if (maze->monsters[i].move) {
+            maze->monsters[i].move(&maze->monsters[i], maze);
+        }
+
+        /* Vérification si le monstre atteint la case du joueur */
+        if (maze->monsters[i].x == maze->player.x && maze->monsters[i].y == maze->player.y) {
+            int pen = maze->monsters[i].penalty_points;
+            if (maze->score >= pen) {
+                maze->score -= pen;
+            } else {
+                maze->score = 0;
+            }
+
+            if (maze->monsters[i].type == MONSTER_OGRE) {
+                snprintf(maze->last_alert, sizeof(maze->last_alert),
+                         "ATTAQUE ! Un Ogre vous a assomme (-%d pts) !", pen);
+            } else {
+                snprintf(maze->last_alert, sizeof(maze->last_alert),
+                         "EFFROI ! Un Fantome vous a traverse (-%d pts) !", pen);
+            }
+        }
+    }
 }
 
 bool maze_move(Maze *maze, int dx, int dy) {
@@ -366,6 +478,8 @@ bool maze_move(Maze *maze, int dx, int dy) {
         }
     }
 
+    maze->last_alert[0] = '\0';
+
     if (maze->trail_count < MAX_TRAIL) {
         maze->trail_count++;
     }
@@ -384,6 +498,7 @@ bool maze_move(Maze *maze, int dx, int dy) {
         maze->score = 0;
     }
 
+    /* Traitement des objets ramassés */
     Cell cell_type = maze->grid[next_y][next_x];
     if (cell_type == KEY) {
         maze->has_key = true;
@@ -398,6 +513,52 @@ bool maze_move(Maze *maze, int dx, int dy) {
             maze->score = 0;
         }
         maze->grid[next_y][next_x] = EMPTY;
+    }
+
+    /* Vérification si le joueur a marché sur un monstre */
+    bool hit_on_step = false;
+    const Monster *m_hit = maze_get_monster_at(maze, next_x, next_y);
+    if (m_hit) {
+        hit_on_step = true;
+        int pen = m_hit->penalty_points;
+        if (maze->score >= pen) {
+            maze->score -= pen;
+        } else {
+            maze->score = 0;
+        }
+        if (m_hit->type == MONSTER_OGRE) {
+            snprintf(maze->last_alert, sizeof(maze->last_alert),
+                     "ATTAQUE ! Vous avez heurte un Ogre (-%d pts) !", pen);
+        } else {
+            snprintf(maze->last_alert, sizeof(maze->last_alert),
+                     "EFFROI ! Vous avez traverse un Fantome (-%d pts) !", pen);
+        }
+    }
+
+    /* Déplacement synchrone des monstres si la sortie n'est pas encore atteinte */
+    if (!maze_is_exit_reached(maze)) {
+        for (int i = 0; i < maze->monster_count; i++) {
+            if (maze->monsters[i].move) {
+                maze->monsters[i].move(&maze->monsters[i], maze);
+            }
+
+            if (!hit_on_step && maze->monsters[i].x == maze->player.x && maze->monsters[i].y == maze->player.y) {
+                int pen = maze->monsters[i].penalty_points;
+                if (maze->score >= pen) {
+                    maze->score -= pen;
+                } else {
+                    maze->score = 0;
+                }
+
+                if (maze->monsters[i].type == MONSTER_OGRE) {
+                    snprintf(maze->last_alert, sizeof(maze->last_alert),
+                             "ATTAQUE ! Un Ogre vous a assomme (-%d pts) !", pen);
+                } else {
+                    snprintf(maze->last_alert, sizeof(maze->last_alert),
+                             "EFFROI ! Un Fantome vous a traverse (-%d pts) !", pen);
+                }
+            }
+        }
     }
 
     return true;
@@ -479,6 +640,65 @@ void maze_spawn_objects(Maze *maze, int num_bonuses, int num_maluses) {
     free(free_cells);
 }
 
+void maze_spawn_monsters(Maze *maze) {
+    if (!maze || !maze->grid) {
+        return;
+    }
+
+    maze->monster_count = 0;
+
+    int num_cell_rows = (maze->height - 1) / 2;
+    int num_cell_cols = (maze->width - 1) / 2;
+    int total_cells = num_cell_rows * num_cell_cols;
+
+    Coords *free_cells = malloc((size_t)total_cells * sizeof(Coords));
+    if (!free_cells) {
+        return;
+    }
+
+    int free_count = 0;
+    for (int r = 0; r < num_cell_rows; r++) {
+        for (int c = 0; c < num_cell_cols; c++) {
+            int gr = 2 * r + 1;
+            int gc = 2 * c + 1;
+            if ((gr == 1 && gc == 1) || (gr == maze->height - 2 && gc == maze->width - 2)) {
+                continue;
+            }
+            if (maze->grid[gr][gc] == EMPTY) {
+                free_cells[free_count].x = gc;
+                free_cells[free_count].y = gr;
+                free_count++;
+            }
+        }
+    }
+
+    for (int i = free_count - 1; i > 0; i--) {
+        int j = rand() % (i + 1);
+        Coords tmp = free_cells[i];
+        free_cells[i] = free_cells[j];
+        free_cells[j] = tmp;
+    }
+
+    int idx = 0;
+    /* 1 Fantôme */
+    if (idx < free_count && maze->monster_count < MAX_MONSTERS) {
+        monster_init(&maze->monsters[maze->monster_count], MONSTER_GHOST,
+                     free_cells[idx].x, free_cells[idx].y);
+        maze->monster_count++;
+        idx++;
+    }
+
+    /* 1 Ogre */
+    if (idx < free_count && maze->monster_count < MAX_MONSTERS) {
+        monster_init(&maze->monsters[maze->monster_count], MONSTER_OGRE,
+                     free_cells[idx].x, free_cells[idx].y);
+        maze->monster_count++;
+        idx++;
+    }
+
+    free(free_cells);
+}
+
 void maze_reset_game_state(Maze *maze) {
     if (!maze) {
         return;
@@ -489,5 +709,11 @@ void maze_reset_game_state(Maze *maze) {
     maze->has_key = false;
     maze->score = BASE_SCORE;
     maze->move_count = 0;
+    maze->last_alert[0] = '\0';
     maze_reset_trail(maze);
+
+    for (int i = 0; i < maze->monster_count; i++) {
+        maze->monsters[i].x = maze->monsters[i].origin_x;
+        maze->monsters[i].y = maze->monsters[i].origin_y;
+    }
 }
