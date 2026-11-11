@@ -31,15 +31,20 @@ typedef struct {
     int y; /* Coordonnées en ligne */
 } Coords;
 
+/** @brief Nombre maximal de positions mémorisées pour la traînée du joueur. */
+#define MAX_TRAIL 10
+
 /**
  * @brief Structure représentant un labyrinthe complet.
  */
 typedef struct {
-    int height;    /* Hauteur de la grille */
-    int width;     /* Largeur de la grille */
-    Coords player; /* Position du joueur */
-    Coords exit;   /* Position de la sortie */
-    Cell **grid;   /* Matrice 2D des cellules */
+    int height;                 /* Hauteur de la grille */
+    int width;                  /* Largeur de la grille */
+    Coords player;              /* Position du joueur */
+    Coords exit;                /* Position de la sortie */
+    Coords trail[MAX_TRAIL];    /* Historique des 10 dernières positions du joueur */
+    int trail_count;            /* Nombre actuel de positions dans la traînée */
+    Cell **grid;                /* Matrice 2D des cellules */
 } Maze;
 
 /**
@@ -107,5 +112,12 @@ bool maze_move(Maze *maze, int dx, int dy);
  * @return true si le joueur est sur la case de sortie, false sinon.
  */
 bool maze_is_exit_reached(const Maze *maze);
+
+/**
+ * @brief Réinitialise la traînée du joueur.
+ *
+ * @param[in,out] maze Pointeur vers le labyrinthe.
+ */
+void maze_reset_trail(Maze *maze);
 
 #endif

@@ -36,6 +36,11 @@ Maze *maze_create(int height, int width) {
     maze->player.y = 0;
     maze->exit.x = width - 2;
     maze->exit.y = height - 1;
+    maze->trail_count = 0;
+    for (int i = 0; i < MAX_TRAIL; i++) {
+        maze->trail[i].x = -1;
+        maze->trail[i].y = -1;
+    }
 
     maze->grid = malloc((size_t)height * sizeof(Cell *));
     if (!maze->grid) {
@@ -179,11 +184,33 @@ int maze_generate(Maze *maze) {
     maze->player.y = 0;
     maze->exit.x = maze->width - 2;
     maze->exit.y = maze->height - 1;
+    maze->trail_count = 0;
+    for (int i = 0; i < MAX_TRAIL; i++) {
+        maze->trail[i].x = -1;
+        maze->trail[i].y = -1;
+    }
 
     maze->grid[maze->player.y][maze->player.x] = EMPTY;
     maze->grid[maze->exit.y][maze->exit.x] = EMPTY;
 
     return 0;
+}
+
+/**
+ * @brief Vérifie si une coordonnée correspond à une position de la traînée du joueur.
+ *
+ * @param[in] maze Pointeur vers le labyrinthe.
+ * @param[in] r Ligne de la cellule.
+ * @param[in] c Colonne de la cellule.
+ * @return true si la position est dans la traînée, false sinon.
+ */
+static bool is_in_trail(const Maze *maze, int r, int c) {
+    for (int i = 0; i < maze->trail_count; i++) {
+        if (maze->trail[i].y == r && maze->trail[i].x == c) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void maze_print(const Maze *maze) {
@@ -197,6 +224,8 @@ void maze_print(const Maze *maze) {
                 putchar('o');
             } else if (r == maze->exit.y && c == maze->exit.x) {
                 putchar('-');
+            } else if (is_in_trail(maze, r, c)) {
+                fputs("·", stdout);
             } else {
                 putchar((char)maze->grid[r][c]);
             }
@@ -320,6 +349,14 @@ bool maze_move(Maze *maze, int dx, int dy) {
         return false;
     }
 
+    if (maze->trail_count < MAX_TRAIL) {
+        maze->trail_count++;
+    }
+    for (int i = maze->trail_count - 1; i > 0; i--) {
+        maze->trail[i] = maze->trail[i - 1];
+    }
+    maze->trail[0] = maze->player;
+
     maze->player.x = next_x;
     maze->player.y = next_y;
     return true;
@@ -331,4 +368,16 @@ bool maze_is_exit_reached(const Maze *maze) {
     }
 
     return (maze->player.x == maze->exit.x && maze->player.y == maze->exit.y);
+}
+
+void maze_reset_trail(Maze *maze) {
+    if (!maze) {
+        return;
+    }
+
+    maze->trail_count = 0;
+    for (int i = 0; i < MAX_TRAIL; i++) {
+        maze->trail[i].x = -1;
+        maze->trail[i].y = -1;
+    }
 }

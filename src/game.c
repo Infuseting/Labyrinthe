@@ -196,6 +196,7 @@ static void game_action_play(Maze *maze) {
 
     maze->player.x = 1;
     maze->player.y = 0;
+    maze_reset_trail(maze);
 
     while (1) {
         ui_clear_screen();
