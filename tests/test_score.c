@@ -70,6 +70,41 @@ MU_TEST(test_score_nominal_sauvegarde_et_chargement) {
 }
 
 /**
+ * @brief Cas nominal : persistance fidèle des noms contenant des espaces, des underscores et des mélanges.
+ */
+MU_TEST(test_score_nominal_sauvegarde_avec_espaces_et_underscores) {
+    const char *test_file = "saves/test_score_escape.score";
+
+    ScoreBoard b1;
+    score_board_init(&b1);
+    score_board_add(&b1, "Jean Dupont", 1500);
+    score_board_add(&b1, "Arthur_Pendragon", 1200);
+    score_board_add(&b1, "Super_Gamer 2023", 1000);
+    score_board_add(&b1, "Double__Under_ Space", 800);
+
+    mu_assert_int_eq(0, score_board_save(&b1, test_file));
+
+    ScoreBoard b2;
+    score_board_init(&b2);
+    mu_assert_int_eq(0, score_board_load(&b2, test_file));
+
+    mu_assert_int_eq(4, b2.count);
+    mu_assert_string_eq("Jean Dupont", b2.entries[0].name);
+    mu_assert_int_eq(1500, b2.entries[0].score);
+
+    mu_assert_string_eq("Arthur_Pendragon", b2.entries[1].name);
+    mu_assert_int_eq(1200, b2.entries[1].score);
+
+    mu_assert_string_eq("Super_Gamer 2023", b2.entries[2].name);
+    mu_assert_int_eq(1000, b2.entries[2].score);
+
+    mu_assert_string_eq("Double__Under_ Space", b2.entries[3].name);
+    mu_assert_int_eq(800, b2.entries[3].score);
+
+    remove(test_file);
+}
+
+/**
  * @brief Cas limite : vérification de l'éligibilité sur un tableau vide.
  */
 MU_TEST(test_score_limite_tableau_vide) {
@@ -228,6 +263,7 @@ MU_TEST(test_score_erreur_fichier_invalide) {
 MU_TEST_SUITE(score_test_suite) {
     MU_RUN_TEST(test_score_nominal_init_et_insertion);
     MU_RUN_TEST(test_score_nominal_sauvegarde_et_chargement);
+    MU_RUN_TEST(test_score_nominal_sauvegarde_avec_espaces_et_underscores);
     MU_RUN_TEST(test_score_limite_tableau_vide);
     MU_RUN_TEST(test_score_limite_saturation_10_scores);
     MU_RUN_TEST(test_score_limite_egalite_scores);

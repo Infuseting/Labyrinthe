@@ -9,6 +9,64 @@
 #include <string.h>
 #include "score.h"
 
+/**
+ * @brief Encode un nom de joueur pour la persistance : les '_' deviennent '__' et les espaces deviennent '_'.
+ *
+ * @param[in] src Nom d'origine.
+ * @param[out] dst Buffer de destination pour le nom encodé sans espace.
+ * @param[in] max_len Taille maximale du buffer de destination.
+ */
+static void score_encode_name(const char *src, char *dst, size_t max_len) {
+    if (!src || !dst || max_len == 0) {
+        return;
+    }
+
+    size_t out = 0;
+    for (size_t in = 0; src[in] != '\0' && out + 1 < max_len; in++) {
+        if (src[in] == '_') {
+            if (out + 2 < max_len) {
+                dst[out++] = '_';
+                dst[out++] = '_';
+            } else {
+                break;
+            }
+        } else if (src[in] == ' ') {
+            dst[out++] = '_';
+        } else {
+            dst[out++] = src[in];
+        }
+    }
+    dst[out] = '\0';
+}
+
+/**
+ * @brief Décode un nom de joueur lu dans un fichier : '__' redevient '_' et '_' isolé redevient un espace.
+ *
+ * @param[in] src Nom encodé lu depuis le fichier.
+ * @param[out] dst Buffer de destination pour le nom restauré.
+ * @param[in] max_len Taille maximale du buffer de destination.
+ */
+static void score_decode_name(const char *src, char *dst, size_t max_len) {
+    if (!src || !dst || max_len == 0) {
+        return;
+    }
+
+    size_t out = 0;
+    for (size_t in = 0; src[in] != '\0' && out + 1 < max_len; in++) {
+        if (src[in] == '_') {
+            if (src[in + 1] == '_') {
+                dst[out++] = '_';
+                in++; /* Consomme le second '_' de l'échappement */
+            } else {
+                dst[out++] = ' ';
+            }
+        } else {
+            dst[out++] = src[in];
+        }
+    }
+    dst[out] = '\0';
+}
+
 void score_board_init(ScoreBoard *board) {
     if (!board) {
         return;
@@ -33,11 +91,11 @@ int score_board_load(ScoreBoard *board, const char *filepath) {
         return 0;
     }
 
-    char name[SCORE_NAME_MAX];
+    char encoded[128];
     int score = 0;
 
-    while (board->count < MAX_SCORES && fscanf(file, "%31s %d", name, &score) == 2) {
-        snprintf(board->entries[board->count].name, SCORE_NAME_MAX, "%s", name);
+    while (board->count < MAX_SCORES && fscanf(file, "%127s %d", encoded, &score) == 2) {
+        score_decode_name(encoded, board->entries[board->count].name, SCORE_NAME_MAX);
         board->entries[board->count].score = score;
         board->count++;
     }
@@ -57,7 +115,9 @@ int score_board_save(const ScoreBoard *board, const char *filepath) {
     }
 
     for (int i = 0; i < board->count; i++) {
-        fprintf(file, "%s %d\n", board->entries[i].name, board->entries[i].score);
+        char encoded[128];
+        score_encode_name(board->entries[i].name, encoded, sizeof(encoded));
+        fprintf(file, "%s %d\n", encoded, board->entries[i].score);
     }
 
     fclose(file);
