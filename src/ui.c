@@ -10,6 +10,7 @@
 #include <termios.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <sys/select.h>
 #include "ui.h"
 
 void ui_clear_screen(void) {
@@ -42,10 +43,36 @@ char ui_get_key(void) {
     }
 
     newt = oldt;
-    newt.c_lflag &= ~(ICANON | ECHO);
+    newt.c_lflag &= ~(tcflag_t)(ICANON | ECHO);
     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 
     int ch = getchar();
+
+    /* Interception des séquences d'échappement ANSI (touches fléchées) */
+    if (ch == 27) {
+        struct timeval tv = {0, 30000}; /* Attente maximale de 30 ms */
+        fd_set fds;
+        FD_ZERO(&fds);
+        FD_SET(STDIN_FILENO, &fds);
+
+        if (select(STDIN_FILENO + 1, &fds, NULL, NULL, &tv) > 0) {
+            int seq1 = getchar();
+            if (seq1 == '[') {
+                FD_ZERO(&fds);
+                FD_SET(STDIN_FILENO, &fds);
+                if (select(STDIN_FILENO + 1, &fds, NULL, NULL, &tv) > 0) {
+                    int seq2 = getchar();
+                    switch (seq2) {
+                        case 'A': ch = 'z'; break; /* Flèche Haut   -> z */
+                        case 'B': ch = 's'; break; /* Flèche Bas    -> s */
+                        case 'C': ch = 'd'; break; /* Flèche Droite -> d */
+                        case 'D': ch = 'q'; break; /* Flèche Gauche -> q */
+                        default: break;
+                    }
+                }
+            }
+        }
+    }
 
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
     return (ch == EOF) ? 0 : (char)ch;
@@ -78,11 +105,23 @@ bool ui_prompt_string(const char *prompt, char *buffer, size_t max_len) {
     fflush(stdout);
 
     while (fgets(buffer, (int)max_len, stdin)) {
+        bool has_newline = false;
         size_t len = strlen(buffer);
-        while (len > 0 && (buffer[len - 1] == '\n' || buffer[len - 1] == '\r')) {
-            buffer[len - 1] = '\0';
-            len--;
+        if (len > 0 && (buffer[len - 1] == '\n' || buffer[len - 1] == '\r')) {
+            has_newline = true;
+            while (len > 0 && (buffer[len - 1] == '\n' || buffer[len - 1] == '\r')) {
+                buffer[len - 1] = '\0';
+                len--;
+            }
         }
+
+        /* Si la saisie dépasse le buffer, vider les caractères excédentaires de stdin */
+        if (!has_newline && len == max_len - 1) {
+            int extra;
+            while ((extra = getchar()) != '\n' && extra != EOF) {
+            }
+        }
+
         if (len > 0) {
             return true;
         }

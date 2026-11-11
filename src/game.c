@@ -245,7 +245,7 @@ static void game_action_play(Maze **current_maze, const char *maze_name) {
 
     while (1) {
         ui_clear_screen();
-        printf("Deplacez-vous avec Z (haut), Q (gauche), S (bas), D (droite).\n");
+        printf("Deplacez-vous avec Z/Fleches (haut), Q (gauche), S (bas), D (droite).\n");
         printf("Appuyez sur C pour abandonner et revenir au menu.\n");
 
         ui_display_hud(maze->score, maze->move_count, maze->has_key,
