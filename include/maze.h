@@ -10,6 +10,9 @@
 #include <stdbool.h>
 #include "monster.h"
 
+/** @brief Taille minimale (hauteur et largeur) d'un labyrinthe via le menu. */
+#define MIN_MAZE_SIZE 5
+
 /** @brief Hauteur par défaut du labyrinthe. */
 #define DEFAULT_HEIGHT 11
 

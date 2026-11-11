@@ -145,8 +145,8 @@ static void game_action_create(Maze **current_maze, char *current_name, size_t m
         return;
     }
 
-    int height = ui_prompt_odd_int("Hauteur (nombre impair >= 3) : ", 3);
-    int width = ui_prompt_odd_int("Largeur (nombre impair >= 3) : ", 3);
+    int height = ui_prompt_odd_int("Hauteur (nombre impair >= 5) : ", MIN_MAZE_SIZE);
+    int width = ui_prompt_odd_int("Largeur (nombre impair >= 5) : ", MIN_MAZE_SIZE);
     int diff_choice = ui_prompt_difficulty();
     Difficulty difficulty = (diff_choice == 2) ? DIFF_HARD : DIFF_EASY;
 
