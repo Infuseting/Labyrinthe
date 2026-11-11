@@ -69,6 +69,38 @@ MU_TEST(test_ui_limite_buffer_taille_minimale) {
 }
 
 /**
+ * @brief Cas limite : vérification du vidage de stdin lorsque la saisie dépasse le buffer.
+ */
+MU_TEST(test_ui_limite_prompt_string_depassement_buffer) {
+    int pipefd[2];
+    if (pipe(pipefd) == 0) {
+        const char *input = "1234567890abcdefghij\nsecond\n";
+        ssize_t written = write(pipefd[1], input, strlen(input));
+        (void)written;
+        close(pipefd[1]);
+
+        int saved_stdin = dup(STDIN_FILENO);
+        dup2(pipefd[0], STDIN_FILENO);
+        close(pipefd[0]);
+
+        char buf1[8];
+        /* Doit lire au plus 7 caractères et vider le reste de la première ligne */
+        bool ok1 = ui_prompt_string("", buf1, sizeof(buf1));
+        mu_check(ok1 == true);
+        mu_assert_string_eq("1234567", buf1);
+
+        /* La lecture suivante doit obtenir la seconde ligne "second", prouvant la purge */
+        char buf2[16];
+        bool ok2 = ui_prompt_string("", buf2, sizeof(buf2));
+        mu_check(ok2 == true);
+        mu_assert_string_eq("second", buf2);
+
+        dup2(saved_stdin, STDIN_FILENO);
+        close(saved_stdin);
+    }
+}
+
+/**
  * @brief Cas aléatoire : vérification de la robustesse sur des noms de fichiers générés aléatoirement.
  */
 MU_TEST(test_ui_aleatoire_verification_noms_divers) {
@@ -165,6 +197,7 @@ MU_TEST_SUITE(ui_test_suite) {
     MU_RUN_TEST(test_ui_limite_effacement_ecran);
     MU_RUN_TEST(test_ui_limite_listing_dossier_vide);
     MU_RUN_TEST(test_ui_limite_buffer_taille_minimale);
+    MU_RUN_TEST(test_ui_limite_prompt_string_depassement_buffer);
     MU_RUN_TEST(test_ui_limite_scoreboard_vide);
     MU_RUN_TEST(test_ui_aleatoire_verification_noms_divers);
     MU_RUN_TEST(test_ui_erreur_prompt_string_parametres_invalides);

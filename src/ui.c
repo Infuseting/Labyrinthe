@@ -81,6 +81,7 @@ char ui_get_key(void) {
 int ui_prompt_menu_choice(void) {
     printf("Votre choix (1-5) : ");
     fflush(stdout);
+    tcflush(STDIN_FILENO, TCIFLUSH);
     char c = ui_get_key();
     while (c == '\n' || c == '\r' || c == ' ') {
         c = ui_get_key();
@@ -207,6 +208,7 @@ void ui_display_message(const char *message) {
     }
     printf("Appuyez sur une touche pour continuer...");
     fflush(stdout);
+    tcflush(STDIN_FILENO, TCIFLUSH);
     ui_get_key();
     printf("\n");
 }
