@@ -41,8 +41,9 @@ Ouvrir ensuite `build/docs/html/index.html`.
 | Commande | Action |
 | --- | --- |
 | `make clean` | Supprime les fichiers objets (`build/obj/` et l'ancien dossier `obj/`). |
-| `make fclean` | Supprime aussi `build/` et les anciens exécutables à la racine. |
+| `make fclean` | Supprime aussi `build/`, `labyrinthe.zip` et les anciens exécutables à la racine. |
 | `make re` | Nettoie complètement puis recompile le programme principal. |
+| `make zip` | Génère l'archive de rendu `labyrinthe.zip` (tout le projet sauf `.git`). |
 | `make help` | Affiche l'aide du Makefile. |
 
 ## Organisation
