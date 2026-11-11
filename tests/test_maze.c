@@ -1,8 +1,19 @@
+/**
+ * @file test_maze.c
+ * @brief Tests unitaires du module maze sous MinUnit.
+ * @author Serret Arthur
+ */
+
 #include <stdbool.h>
-#include <stdlib.h>
 #include "maze.h"
 #include "minunit.h"
 
+/**
+ * @brief Compte le nombre de murs intérieurs ouverts dans le labyrinthe.
+ *
+ * @param[in] maze Pointeur vers le labyrinthe.
+ * @return Nombre de murs intérieurs ouverts.
+ */
 static int count_open_internal_walls(const Maze *maze) {
     int num_cell_rows = (maze->height - 1) / 2;
     int num_cell_cols = (maze->width - 1) / 2;
@@ -25,6 +36,12 @@ static int count_open_internal_walls(const Maze *maze) {
     return open_walls;
 }
 
+/**
+ * @brief Vérifie la connectivité complète par BFS depuis (1, 1).
+ *
+ * @param[in] maze Pointeur vers le labyrinthe.
+ * @return Nombre de cellules atteintes, ou valeur négative si entrée/sortie non atteintes.
+ */
 static int count_reachable_cells(const Maze *maze) {
     int num_cell_rows = (maze->height - 1) / 2;
     int num_cell_cols = (maze->width - 1) / 2;
@@ -114,6 +131,9 @@ static int count_reachable_cells(const Maze *maze) {
     return reached;
 }
 
+/**
+ * @brief Cas nominal : création et génération d'un labyrinthe 11x25.
+ */
 MU_TEST(test_cas_nominal_creation_et_generation_11x25) {
     Maze *maze = maze_create(DEFAULT_HEIGHT, DEFAULT_WIDTH);
     mu_check(maze != NULL);
@@ -150,6 +170,9 @@ MU_TEST(test_cas_nominal_creation_et_generation_11x25) {
     maze_free(maze);
 }
 
+/**
+ * @brief Cas nominal : validation sur la taille d'exemple 5x7 de l'annexe.
+ */
 MU_TEST(test_cas_nominal_annexe_5x7) {
     Maze *maze = maze_create(5, 7);
     mu_check(maze != NULL);
@@ -162,6 +185,9 @@ MU_TEST(test_cas_nominal_annexe_5x7) {
     maze_free(maze);
 }
 
+/**
+ * @brief Cas limite : taille minimale valide 3x3 (1 seule case).
+ */
 MU_TEST(test_cas_limite_taille_minimale_3x3) {
     Maze *maze = maze_create(3, 3);
     mu_check(maze != NULL);
@@ -177,6 +203,9 @@ MU_TEST(test_cas_limite_taille_minimale_3x3) {
     maze_free(maze);
 }
 
+/**
+ * @brief Cas limite : labyrinthe couloir horizontal (hauteur 3, largeur 25).
+ */
 MU_TEST(test_cas_limite_couloir_horizontal_3x25) {
     Maze *maze = maze_create(3, 25);
     mu_check(maze != NULL);
@@ -189,6 +218,9 @@ MU_TEST(test_cas_limite_couloir_horizontal_3x25) {
     maze_free(maze);
 }
 
+/**
+ * @brief Cas limite : labyrinthe couloir vertical (hauteur 11, largeur 3).
+ */
 MU_TEST(test_cas_limite_couloir_vertical_11x3) {
     Maze *maze = maze_create(11, 3);
     mu_check(maze != NULL);
@@ -201,11 +233,17 @@ MU_TEST(test_cas_limite_couloir_vertical_11x3) {
     maze_free(maze);
 }
 
+/**
+ * @brief Cas limite : libération d'un pointeur NULL sans plantage.
+ */
 MU_TEST(test_cas_limite_free_null) {
     maze_free(NULL);
     mu_check(true);
 }
 
+/**
+ * @brief Cas aléatoire : variabilité et conformité sur plusieurs exécutions.
+ */
 MU_TEST(test_cas_aleatoire_variabilite_et_validite_multiples) {
     Maze *m1 = maze_create(DEFAULT_HEIGHT, DEFAULT_WIDTH);
     Maze *m2 = maze_create(DEFAULT_HEIGHT, DEFAULT_WIDTH);
@@ -236,6 +274,9 @@ MU_TEST(test_cas_aleatoire_variabilite_et_validite_multiples) {
     maze_free(m2);
 }
 
+/**
+ * @brief Cas d'erreur : rejet des dimensions paires.
+ */
 MU_TEST(test_cas_erreur_dimensions_paires) {
     mu_check(maze_create(10, 25) == NULL);
     mu_check(maze_create(11, 24) == NULL);
@@ -243,6 +284,9 @@ MU_TEST(test_cas_erreur_dimensions_paires) {
     mu_check(maze_create(4, 4) == NULL);
 }
 
+/**
+ * @brief Cas d'erreur : rejet des dimensions inférieures à 3 ou négatives.
+ */
 MU_TEST(test_cas_erreur_dimensions_trop_petites_ou_negatives) {
     mu_check(maze_create(1, 25) == NULL);
     mu_check(maze_create(11, 1) == NULL);
@@ -253,12 +297,18 @@ MU_TEST(test_cas_erreur_dimensions_trop_petites_ou_negatives) {
     mu_check(maze_create(-5, -5) == NULL);
 }
 
+/**
+ * @brief Cas d'erreur : manipulation de pointeurs NULL.
+ */
 MU_TEST(test_cas_erreur_pointeurs_null) {
     mu_assert_int_eq(-1, maze_generate(NULL));
     maze_print(NULL);
     mu_check(true);
 }
 
+/**
+ * @brief Suite de tests unitaires pour le module labyrinthe.
+ */
 MU_TEST_SUITE(maze_test_suite) {
     MU_RUN_TEST(test_cas_nominal_creation_et_generation_11x25);
     MU_RUN_TEST(test_cas_nominal_annexe_5x7);
@@ -272,6 +322,11 @@ MU_TEST_SUITE(maze_test_suite) {
     MU_RUN_TEST(test_cas_erreur_pointeurs_null);
 }
 
+/**
+ * @brief Exécuteur principal des tests unitaires MinUnit.
+ *
+ * @return Code de retour MinUnit (0 si succès, nombre d'échecs sinon).
+ */
 int main(void) {
     MU_RUN_SUITE(maze_test_suite);
     MU_REPORT();
