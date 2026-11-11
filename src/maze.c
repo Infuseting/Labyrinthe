@@ -20,7 +20,6 @@ typedef struct {
     int wall_col; /* Colonne du mur dans la grille d'affichage */
 } Wall;
 
-
 Maze *maze_create(int height, int width) {
     if (height < 3 || width < 3 || height % 2 == 0 || width % 2 == 0) {
         return NULL;
@@ -61,7 +60,6 @@ Maze *maze_create(int height, int width) {
 
     return maze;
 }
-
 
 void maze_free(Maze *maze) {
     if (!maze) {
@@ -205,4 +203,132 @@ void maze_print(const Maze *maze) {
         }
         putchar('\n');
     }
+}
+
+int maze_save(const Maze *maze, const char *filepath) {
+    if (!maze || !maze->grid || !filepath) {
+        return -1;
+    }
+
+    FILE *file = fopen(filepath, "w");
+    if (!file) {
+        return -1;
+    }
+
+    fprintf(file, "%d %d\n", maze->height, maze->width);
+
+    for (int r = 0; r < maze->height; r++) {
+        for (int c = 0; c < maze->width; c++) {
+            if (r == maze->player.y && c == maze->player.x) {
+                fputc('o', file);
+            } else if (r == maze->exit.y && c == maze->exit.x) {
+                fputc('-', file);
+            } else {
+                fputc((char)maze->grid[r][c], file);
+            }
+        }
+        fputc('\n', file);
+    }
+
+    fclose(file);
+    return 0;
+}
+
+Maze *maze_load(const char *filepath) {
+    if (!filepath) {
+        return NULL;
+    }
+
+    FILE *file = fopen(filepath, "r");
+    if (!file) {
+        return NULL;
+    }
+
+    int height = 0;
+    int width = 0;
+    if (fscanf(file, "%d %d", &height, &width) != 2) {
+        fclose(file);
+        return NULL;
+    }
+
+    int ch = fgetc(file);
+    while (ch != '\n' && ch != EOF) {
+        ch = fgetc(file);
+    }
+
+    Maze *maze = maze_create(height, width);
+    if (!maze) {
+        fclose(file);
+        return NULL;
+    }
+
+    for (int r = 0; r < height; r++) {
+        for (int c = 0; c < width; c++) {
+            int current_char = fgetc(file);
+            if (current_char == '\r') {
+                current_char = fgetc(file);
+            }
+            if (current_char == EOF || current_char == '\n') {
+                maze_free(maze);
+                fclose(file);
+                return NULL;
+            }
+
+            if (current_char == 'o') {
+                maze->player.x = c;
+                maze->player.y = r;
+                maze->grid[r][c] = EMPTY;
+            } else if (current_char == '-') {
+                maze->exit.x = c;
+                maze->exit.y = r;
+                maze->grid[r][c] = EMPTY;
+            } else if (current_char == WALL) {
+                maze->grid[r][c] = WALL;
+            } else {
+                maze->grid[r][c] = EMPTY;
+            }
+        }
+
+        int end_line = fgetc(file);
+        if (end_line == '\r') {
+            end_line = fgetc(file);
+        }
+        if (end_line != '\n' && end_line != EOF) {
+            maze_free(maze);
+            fclose(file);
+            return NULL;
+        }
+    }
+
+    fclose(file);
+    return maze;
+}
+
+bool maze_move(Maze *maze, int dx, int dy) {
+    if (!maze || !maze->grid) {
+        return false;
+    }
+
+    int next_x = maze->player.x + dx;
+    int next_y = maze->player.y + dy;
+
+    if (next_y < 0 || next_y >= maze->height || next_x < 0 || next_x >= maze->width) {
+        return false;
+    }
+
+    if (maze->grid[next_y][next_x] == WALL) {
+        return false;
+    }
+
+    maze->player.x = next_x;
+    maze->player.y = next_y;
+    return true;
+}
+
+bool maze_is_exit_reached(const Maze *maze) {
+    if (!maze) {
+        return false;
+    }
+
+    return (maze->player.x == maze->exit.x && maze->player.y == maze->exit.y);
 }

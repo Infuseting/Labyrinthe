@@ -7,6 +7,8 @@
 #ifndef MAZE_H
 #define MAZE_H
 
+#include <stdbool.h>
+
 /** @brief Hauteur par défaut du labyrinthe. */
 #define DEFAULT_HEIGHT 11
 
@@ -70,5 +72,40 @@ int maze_generate(Maze *maze);
  * @param[in] maze Pointeur vers le labyrinthe à afficher.
  */
 void maze_print(const Maze *maze);
+
+/**
+ * @brief Sauvegarde le labyrinthe dans un fichier au format .cfg.
+ *
+ * @param[in] maze Pointeur vers le labyrinthe à sauvegarder.
+ * @param[in] filepath Chemin du fichier de destination.
+ * @return 0 en cas de succès, -1 en cas d'erreur.
+ */
+int maze_save(const Maze *maze, const char *filepath);
+
+/**
+ * @brief Charge un labyrinthe depuis un fichier au format .cfg.
+ *
+ * @param[in] filepath Chemin du fichier source.
+ * @return Pointeur vers le labyrinthe chargé, ou NULL en cas d'erreur.
+ */
+Maze *maze_load(const char *filepath);
+
+/**
+ * @brief Tente de déplacer le joueur selon un vecteur de déplacement (dx, dy).
+ *
+ * @param[in,out] maze Pointeur vers le labyrinthe.
+ * @param[in] dx Déplacement horizontal (-1, 0, 1).
+ * @param[in] dy Déplacement vertical (-1, 0, 1).
+ * @return true si le déplacement a été effectué, false si bloqué par un mur ou hors limites.
+ */
+bool maze_move(Maze *maze, int dx, int dy);
+
+/**
+ * @brief Vérifie si le joueur a atteint la porte de sortie.
+ *
+ * @param[in] maze Pointeur vers le labyrinthe.
+ * @return true si le joueur est sur la case de sortie, false sinon.
+ */
+bool maze_is_exit_reached(const Maze *maze);
 
 #endif

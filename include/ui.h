@@ -1,0 +1,72 @@
+/**
+ * @file ui.h
+ * @brief Fonctions d'interaction utilisateur et d'affichage console.
+ * @author Serret Arthur
+ */
+
+#ifndef UI_H
+#define UI_H
+
+#include <stdbool.h>
+#include <stddef.h>
+
+/**
+ * @brief Efface l'écran du terminal.
+ */
+void ui_clear_screen(void);
+
+/**
+ * @brief Affiche le menu principal du jeu.
+ *
+ * @param[in] has_active_maze Indique si un labyrinthe est actuellement chargé.
+ */
+void ui_display_menu(bool has_active_maze);
+
+/**
+ * @brief Lit un caractère immédiatement au clavier sans attendre l'appui sur Entrée.
+ *
+ * @return Caractère lu au clavier.
+ */
+char ui_get_key(void);
+
+/**
+ * @brief Demande à l'utilisateur de choisir une option dans le menu.
+ *
+ * @return Entier correspondant au choix sélectionné.
+ */
+int ui_prompt_menu_choice(void);
+
+/**
+ * @brief Demande la saisie sécurisée d'une chaîne de caractères.
+ *
+ * @param[in] prompt Message d'invite affiché à l'utilisateur.
+ * @param[out] buffer Buffer mémoire pour stocker la chaîne saisie.
+ * @param[in] max_len Taille maximale du buffer.
+ * @return true si la saisie est non-vide, false sinon.
+ */
+bool ui_prompt_string(const char *prompt, char *buffer, size_t max_len);
+
+/**
+ * @brief Demande la saisie d'un entier impair supérieur ou égal à une valeur minimale.
+ *
+ * @param[in] prompt Message d'invite affiché à l'utilisateur.
+ * @param[in] min_val Valeur minimale acceptée.
+ * @return Entier impair valide saisi.
+ */
+int ui_prompt_odd_int(const char *prompt, int min_val);
+
+/**
+ * @brief Affiche la liste des fichiers de sauvegarde existants dans un répertoire.
+ *
+ * @param[in] directory Répertoire contenant les fichiers de sauvegarde.
+ */
+void ui_list_saved_mazes(const char *directory);
+
+/**
+ * @brief Affiche un message d'information ou d'erreur et attend un appui sur une touche.
+ *
+ * @param[in] message Message à afficher.
+ */
+void ui_display_message(const char *message);
+
+#endif
