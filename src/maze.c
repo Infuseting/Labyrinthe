@@ -1,15 +1,25 @@
+/**
+ * @file maze.c
+ * @brief Gestion et génération du labyrinthe.
+ * @author Serret Arthur
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "maze.h"
 
+/**
+ * @brief Structure représentant un mur intérieur entre deux cellules.
+ */
 typedef struct {
-    int r1;
-    int c1;
-    int r2;
-    int c2;
-    int wall_row;
-    int wall_col;
+    int r1;       /* Ligne de la première cellule */
+    int c1;       /* Colonne de la première cellule */
+    int r2;       /* Ligne de la seconde cellule */
+    int c2;       /* Colonne de la seconde cellule */
+    int wall_row; /* Ligne du mur dans la grille d'affichage */
+    int wall_col; /* Colonne du mur dans la grille d'affichage */
 } Wall;
+
 
 Maze *maze_create(int height, int width) {
     if (height < 3 || width < 3 || height % 2 == 0 || width % 2 == 0) {
@@ -51,6 +61,7 @@ Maze *maze_create(int height, int width) {
 
     return maze;
 }
+
 
 void maze_free(Maze *maze) {
     if (!maze) {
