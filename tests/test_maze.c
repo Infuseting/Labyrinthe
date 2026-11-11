@@ -5,6 +5,7 @@
  */
 
 #include <stdbool.h>
+#include <stdlib.h>
 #include "maze.h"
 #include "minunit.h"
 
