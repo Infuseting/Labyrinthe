@@ -5,6 +5,7 @@
  */
 
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include "maze.h"
 #include "minunit.h"
@@ -187,6 +188,56 @@ MU_TEST(test_cas_nominal_annexe_5x7) {
 }
 
 /**
+ * @brief Cas nominal : sauvegarde et rechargement fidèle d'un labyrinthe en fichier .cfg.
+ */
+MU_TEST(test_cas_nominal_sauvegarde_et_chargement) {
+    const char *test_path = "test_save_load.cfg";
+    Maze *original = maze_create(DEFAULT_HEIGHT, DEFAULT_WIDTH);
+    mu_check(original != NULL);
+    mu_assert_int_eq(0, maze_generate(original));
+
+    mu_assert_int_eq(0, maze_save(original, test_path));
+
+    Maze *loaded = maze_load(test_path);
+    mu_check(loaded != NULL);
+    mu_assert_int_eq(original->height, loaded->height);
+    mu_assert_int_eq(original->width, loaded->width);
+    mu_assert_int_eq(original->player.x, loaded->player.x);
+    mu_assert_int_eq(original->player.y, loaded->player.y);
+    mu_assert_int_eq(original->exit.x, loaded->exit.x);
+    mu_assert_int_eq(original->exit.y, loaded->exit.y);
+
+    for (int r = 0; r < original->height; r++) {
+        for (int c = 0; c < original->width; c++) {
+            mu_assert_int_eq((int)original->grid[r][c], (int)loaded->grid[r][c]);
+        }
+    }
+
+    maze_free(original);
+    maze_free(loaded);
+    remove(test_path);
+}
+
+/**
+ * @brief Cas nominal : déplacement valide du joueur dans les couloirs ouverts.
+ */
+MU_TEST(test_cas_nominal_deplacement_joueur) {
+    Maze *maze = maze_create(DEFAULT_HEIGHT, DEFAULT_WIDTH);
+    mu_check(maze != NULL);
+    mu_assert_int_eq(0, maze_generate(maze));
+
+    mu_assert_int_eq(1, maze->player.x);
+    mu_assert_int_eq(0, maze->player.y);
+
+    bool moved = maze_move(maze, 0, 1);
+    mu_check(moved == true);
+    mu_assert_int_eq(1, maze->player.x);
+    mu_assert_int_eq(1, maze->player.y);
+
+    maze_free(maze);
+}
+
+/**
  * @brief Cas limite : taille minimale valide 3x3 (1 seule case).
  */
 MU_TEST(test_cas_limite_taille_minimale_3x3) {
@@ -230,6 +281,49 @@ MU_TEST(test_cas_limite_couloir_vertical_11x3) {
     int total_cells = 5 * 1;
     mu_assert_int_eq(total_cells - 1, count_open_internal_walls(maze));
     mu_assert_int_eq(total_cells, count_reachable_cells(maze));
+
+    maze_free(maze);
+}
+
+/**
+ * @brief Cas limite : blocage du déplacement contre un mur et sortie de grille.
+ */
+MU_TEST(test_cas_limite_collisions_murs_et_bordures) {
+    Maze *maze = maze_create(DEFAULT_HEIGHT, DEFAULT_WIDTH);
+    mu_check(maze != NULL);
+    mu_assert_int_eq(0, maze_generate(maze));
+
+    mu_assert_int_eq(1, maze->player.x);
+    mu_assert_int_eq(0, maze->player.y);
+
+    mu_check(maze_move(maze, 0, -1) == false);
+    mu_assert_int_eq(1, maze->player.x);
+    mu_assert_int_eq(0, maze->player.y);
+
+    mu_check(maze_move(maze, -1, 0) == false);
+    mu_assert_int_eq(1, maze->player.x);
+    mu_assert_int_eq(0, maze->player.y);
+
+    mu_check(maze_move(maze, 1, 0) == false);
+    mu_assert_int_eq(1, maze->player.x);
+    mu_assert_int_eq(0, maze->player.y);
+
+    maze_free(maze);
+}
+
+/**
+ * @brief Cas limite : détection exacte de l'arrivée sur la sortie.
+ */
+MU_TEST(test_cas_limite_detection_sortie) {
+    Maze *maze = maze_create(DEFAULT_HEIGHT, DEFAULT_WIDTH);
+    mu_check(maze != NULL);
+    mu_assert_int_eq(0, maze_generate(maze));
+
+    mu_check(maze_is_exit_reached(maze) == false);
+
+    maze->player.x = maze->exit.x;
+    maze->player.y = maze->exit.y;
+    mu_check(maze_is_exit_reached(maze) == true);
 
     maze_free(maze);
 }
@@ -299,11 +393,30 @@ MU_TEST(test_cas_erreur_dimensions_trop_petites_ou_negatives) {
 }
 
 /**
- * @brief Cas d'erreur : manipulation de pointeurs NULL.
+ * @brief Cas d'erreur : gestion des erreurs sur fichiers de sauvegarde et chargement.
+ */
+MU_TEST(test_cas_erreur_fichiers_sauvegarde_et_chargement) {
+    Maze *maze = maze_create(DEFAULT_HEIGHT, DEFAULT_WIDTH);
+    mu_check(maze != NULL);
+
+    mu_assert_int_eq(-1, maze_save(NULL, "test.cfg"));
+    mu_assert_int_eq(-1, maze_save(maze, NULL));
+    mu_assert_int_eq(-1, maze_save(maze, "/invalid_directory_path/test.cfg"));
+
+    mu_check(maze_load(NULL) == NULL);
+    mu_check(maze_load("fichier_qui_n_existe_pas_123456789.cfg") == NULL);
+
+    maze_free(maze);
+}
+
+/**
+ * @brief Cas d'erreur : manipulation de pointeurs NULL sur génération, affichage et déplacement.
  */
 MU_TEST(test_cas_erreur_pointeurs_null) {
     mu_assert_int_eq(-1, maze_generate(NULL));
     maze_print(NULL);
+    mu_check(maze_move(NULL, 1, 0) == false);
+    mu_check(maze_is_exit_reached(NULL) == false);
     mu_check(true);
 }
 
@@ -313,13 +426,18 @@ MU_TEST(test_cas_erreur_pointeurs_null) {
 MU_TEST_SUITE(maze_test_suite) {
     MU_RUN_TEST(test_cas_nominal_creation_et_generation_11x25);
     MU_RUN_TEST(test_cas_nominal_annexe_5x7);
+    MU_RUN_TEST(test_cas_nominal_sauvegarde_et_chargement);
+    MU_RUN_TEST(test_cas_nominal_deplacement_joueur);
     MU_RUN_TEST(test_cas_limite_taille_minimale_3x3);
     MU_RUN_TEST(test_cas_limite_couloir_horizontal_3x25);
     MU_RUN_TEST(test_cas_limite_couloir_vertical_11x3);
+    MU_RUN_TEST(test_cas_limite_collisions_murs_et_bordures);
+    MU_RUN_TEST(test_cas_limite_detection_sortie);
     MU_RUN_TEST(test_cas_limite_free_null);
     MU_RUN_TEST(test_cas_aleatoire_variabilite_et_validite_multiples);
     MU_RUN_TEST(test_cas_erreur_dimensions_paires);
     MU_RUN_TEST(test_cas_erreur_dimensions_trop_petites_ou_negatives);
+    MU_RUN_TEST(test_cas_erreur_fichiers_sauvegarde_et_chargement);
     MU_RUN_TEST(test_cas_erreur_pointeurs_null);
 }
 
