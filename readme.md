@@ -62,7 +62,7 @@ Le choix de la difficulté se fait lors de la création d'un labyrinthe :
 * **Objets ramassés** : Trésors (`+200 pts`), Pièges (`-100 pts`).
 * **Attaques subies** : Contact avec un Fantôme (`-75 pts`), Contact avec un Ogre (`-150 pts`).
 * **Score plancher** : Le score ne peut jamais devenir négatif (plafonné à 0).
-* **Tableau d'honneur** : À la fin d'une partie victorieuse, si votre score figure parmi les 10 meilleurs du labyrinthe, vous êtes invité à saisir votre pseudo. Le classement est sauvegardé dans `saves/<nom_du_labyrinthe>.score` et consultable depuis le menu principal (Option 4).
+* **Tableau** : À la fin d'une partie victorieuse, si votre score figure parmi les 10 meilleurs du labyrinthe, vous êtes invité à saisir votre pseudo. Le classement est sauvegardé dans `saves/<nom_du_labyrinthe>.score` et consultable depuis le menu principal (Option 4).
 
 ---
 
